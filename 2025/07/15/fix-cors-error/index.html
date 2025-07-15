@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html class="has-navbar-fixed-top">
+<head>
+    <meta charset="utf-8" />
+<title>不是 CORS 問題的 CORS 問題：瀏覽器、伺服器和快取的行為如何造成 CORS 錯誤 - Hexo</title>
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1"
+/>
+
+<link
+  rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/outdated-browser/1.1.5/outdatedbrowser.min.css"
+/>
+
+ 
+<meta name="description" content="" />
+   <meta name="description" content="前言前陣子在工作時，其中一項任務是要從 S3 取得一張圖片畫在 canvas 上，但出現了 CORS 錯誤，使得圖片沒辦法顯示在 canvas 上，歷經了一長串的除錯過程後解決了這個問題，也在 Medium 上發了一篇文。我原本想將那篇文章原封不動的搬過來，殊不知順手滑到了 Huli 大大的 CORS 完全手冊，發現自己對於 CORS 所知甚淺，所以後來經歷一番消化和查找後決定將原本的內容補充的更">
+<meta property="og:type" content="article">
+<meta property="og:title" content="不是 CORS 問題的 CORS 問題：瀏覽器、伺服器和快取的行為如何造成 CORS 錯誤">
+<meta property="og:url" content="https://chaoting-sun.github.io/2025/07/15/fix-cors-error/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="前言前陣子在工作時，其中一項任務是要從 S3 取得一張圖片畫在 canvas 上，但出現了 CORS 錯誤，使得圖片沒辦法顯示在 canvas 上，歷經了一長串的除錯過程後解決了這個問題，也在 Medium 上發了一篇文。我原本想將那篇文章原封不動的搬過來，殊不知順手滑到了 Huli 大大的 CORS 完全手冊，發現自己對於 CORS 所知甚淺，所以後來經歷一番消化和查找後決定將原本的內容補充的更">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://chaoting-sun.github.io/2025/07/15/fix-cors-error/website-layout-with-cors-error.png">
+<meta property="og:image" content="https://chaoting-sun.github.io/2025/07/15/fix-cors-error/cloudfront-lambda@edge-events.png">
+<meta property="article:published_time" content="2025-07-15T02:30:00.000Z">
+<meta property="article:modified_time" content="2025-07-15T16:13:26.189Z">
+<meta property="article:author" content="Tim">
+<meta property="article:tag" content="前端">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://chaoting-sun.github.io/2025/07/15/fix-cors-error/website-layout-with-cors-error.png">   
+<link rel="icon" href="/favicon.png" />
+
+
+<link
+  rel="stylesheet"
+  href="//fonts.googleapis.com/css?family=Ovo|Source+Code+Pro"
+/>
+<link
+  rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/bulma/0.6.2/css/bulma.min.css"
+/>
+
+
+<link
+  rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/lightgallery/1.6.8/css/lightgallery.min.css"
+/>
+<link
+  rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/justifiedGallery/3.6.5/css/justifiedGallery.min.css"
+/>
+
+
+<link
+  rel="stylesheet"
+  href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/atom-one-light.min.css"
+/>
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+<script defer src="//use.fontawesome.com/releases/v5.0.8/js/all.js"></script>
+
+          
+  
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <nav
+  class="navbar is-transparent is-fixed-top navbar-main"
+  role="navigation"
+  aria-label="main navigation"
+>
+  <div class="container">
+    <div class="navbar-brand">
+      <a class="navbar-item navbar-logo" href="/">
+        Tim's Blog
+      </a>
+      <div class="navbar-burger">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+    
+    <div class="navbar-menu navbar-start">
+      
+      <a class="navbar-item" href="/archives"> 封存 </a>
+      
+      <a class="navbar-item" href="/categories/Software"> 軟體 </a>
+      
+    </div>
+    
+
+    <div class="navbar-menu navbar-end">
+      
+      <a
+        class="navbar-item search"
+        title="搜尋"
+        href="javascript:;"
+      >
+        <i class="fas fa-search"></i>
+      </a>
+        
+      <a
+        class="navbar-item"
+        title="GitHub"
+        target="_blank" rel="noopener" href="https://github.com/chaoting-sun"
+      >
+        
+        <i class="fab fa-github"></i>
+        
+      </a>
+       
+    </div>
+  </div>
+</nav>
+
+    <section class="section">
+    <div class="container">
+    <article class="article content gallery" itemscope itemprop="blogPost">
+    <h1 class="article-title is-size-3 is-size-4-mobile" itemprop="name">
+        
+            不是 CORS 問題的 CORS 問題：瀏覽器、伺服器和快取的行為如何造成 CORS 錯誤
+        
+    </h1>
+    <div class="article-meta columns is-variable is-1 is-multiline is-mobile is-size-7-mobile">
+        <span class="column is-narrow">
+            
+                <time datetime="2025-07-15T02:30:00.000Z" itemprop="datePublished">7月 15 2025</time>
+            
+        </span>
+        
+        <span class="column is-narrow article-category">
+            <i class="far fa-folder"></i>
+            <a class="article-category-link" href="/categories/Software/">Software</a>
+        </span>
+        
+        
+        <span class="column is-narrow">
+            
+            
+            35 分钟 讀完 (約 5264 字)
+        </span>
+        
+    </div>
+    <div class="article-entry is-size-6-mobile" itemprop="articleBody">
+    
+        <html><head></head><body><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>前陣子在工作時，其中一項任務是要從 S3 取得一張圖片畫在 canvas 上，但出現了 CORS 錯誤，使得圖片沒辦法顯示在 canvas 上，歷經了一長串的除錯過程後解決了這個問題，也在 Medium 上發了一篇文。我原本想將那篇文章原封不動的搬過來，殊不知順手滑到了 Huli 大大的 <a target="_blank" rel="noopener" href="https://blog.huli.tw/2021/02/19/cors-guide-1/">CORS 完全手冊</a>，發現自己對於 CORS 所知甚淺，所以後來經歷一番消化和查找後決定將原本的內容補充的更加完整。</p>
+<p>首先，如果想看全中文網站最好的 CORS 教學，請參考 Huli 大大的文章，這篇文章會專注在系列文的<a target="_blank" rel="noopener" href="https://blog.huli.tw/2021/02/19/cors-guide-6/">第六篇</a> 所提到的「可能不是 CORS 問題的 CORS 問題」。</p>
+<span id="more"></span>
+
+<h1 id="我遇到了什麼問題？"><a href="#我遇到了什麼問題？" class="headerlink" title="我遇到了什麼問題？"></a>我遇到了什麼問題？</h1><p>如下圖，我們希望在前端中將使用者選取的圖片呈現在 <code>&lt;canvas&gt;</code> 上，當使用者切換左邊的圖片時，<code>&lt;canvas&gt;</code> 中的圖片會跟著一起變。</p>
+<p align="center">
+  <img src="/2025/07/15/fix-cors-error/website-layout-with-cors-error.png" alt="website layout with cors error" width="400">
+</p>
+
+<p>為了將圖片渲染在 <code>&lt;canvas&gt;</code>，必須在 load 圖片時將 <code>crossorigin</code> 設為 <code>anonymous</code>：</p>
+<figure class="highlight typescript hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-keyword">const</span> img = <span class="hljs-keyword">new</span> <span class="title class_">Image</span>();</span><br><span class="line">img.<span class="hljs-property">crossOrigin</span> = <span class="hljs-string">"anonymous"</span>;</span><br><span class="line">img.<span class="hljs-property">onload</span> = <span class="hljs-function">() =&gt;</span> {</span><br><span class="line">  <span class="hljs-comment">// 畫圖片在 canvas 上</span></span><br><span class="line">  ctx.<span class="title function_">drawImage</span>(img, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);</span><br><span class="line">};</span><br><span class="line">img.<span class="hljs-property">onerror</span> = <span class="hljs-function">(<span class="hljs-params">e</span>) =&gt;</span> {</span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">error</span>(<span class="hljs-string">"圖片載入失敗:"</span>, e);</span><br><span class="line">};</span><br><span class="line">img.<span class="hljs-property">src</span> = url;</span><br></pre></td></tr></tbody></table></figure>
+
+<p>這邊需要快速補充一下 crossorigin 設為 <code>anonymous</code> 的原因。沒興趣的話可以跳過這段。</p>
+<h2 id="容我解釋一下"><a href="#容我解釋一下" class="headerlink" title="容我解釋一下"></a>容我解釋一下</h2><p>瀏覽器有所謂的<a target="_blank" rel="noopener" href="https://developer.mozilla.org/zh-TW/docs/Web/Security/Same-origin_policy">同源政策</a> (Same-origin policy)。如果兩個網頁的協定 (protocol)、域名 (domain) 和埠口 (port) 都相同，就稱為同源，其中一個不同就是不同源。</p>
+<p>同源政策限制了不同「源」的資源做資料共享，以保護使用者不會在不知情的狀況下被惡意網站取得敏感資料，比如沒有同源政策的話，惡意網站就可以使用你登入銀行網站後在瀏覽器中存的 Cookie 來登入你的銀行網站以竊取資料。</p>
+<p>不過這邊常見的誤區是，要請求不同源的資源時，瀏覽器還是會發送 Request 出去，當 Response 回來時瀏覽器才會因為同源政策把 Response 擋住，讓 JavaScript 無法取得。</p>
+<p>當瀏覽器要對不同源的資源做 HTTP 請求時，就必須要遵守跨來源資源共用的規範，就是 <a target="_blank" rel="noopener" href="https://developer.mozilla.org/zh-TW/docs/Web/HTTP/Guides/CORS">CORS</a> (Cross-Origin Resource Sharing)，它的核心是透過一系列的 HTTP Request Headers 和 Response Headers 來進行溝通。</p>
+<p>當瀏覽器發出跨來源請求時，它會自動在請求中加入 <code>Origin</code> Header，指示發起請求的網頁來源。伺服器會檢查這個 <code>Origin</code> Header 來判斷是否允許這個來源取得資訊。</p>
+<figure class="highlight http hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-attribute">Origin</span><span class="hljs-punctuation">: </span>https://your-website.com</span><br></pre></td></tr></tbody></table></figure>
+
+<p>接著，如果伺服器接受這個跨來源請求，他就會在回應中加上 <code>Access-Control-Allow-Origin</code> Header，表示允許這個來源取得資訊。可以是特定的來源，也可以是 <code>*</code> 表示允許所有來源。</p>
+<figure class="highlight http hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-attribute">Access-Control-Allow-Origin</span><span class="hljs-punctuation">: </span>https://your-website.com  // 只允許特定來源</span><br><span class="line"><span class="hljs-attribute">Access-Control-Allow-Origin</span><span class="hljs-punctuation">: </span>* // 允許所有來源</span><br></pre></td></tr></tbody></table></figure>
+
+<p>瀏覽器收到回應後，會檢查 <code>Access-Control-Allow-Origin</code> 是否與目前網頁的 <code>Origin</code> 匹配，是的話瀏覽器就會允許 JavaScript 讀取完整資源，不然就會阻擋並丟出 CORS 錯誤。</p>
+<p>跨來源請求有很多不同類型，像是簡單請求、預檢請求、帶有憑證的請求等等，不同的請求方式會要求加入不同的 Header 來進行溝通，沒遵守的話也會丟出 CORS 錯誤。</p>
+<p>這時候，或許有些人跟我一樣疑惑，一般在瀏覽器上的圖片也是要跨來源請求，為什麼沒有出現 CORS 錯誤？</p>
+<figure class="highlight html hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://other-website.com/image.png"</span> /&gt;</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>這是因為瀏覽器的同源政策主要限制的是 <strong>JavaScript 對於跨來源資源「內容」的讀取權限</strong>，不是限制 HTML 標籤 (如<code>&lt;img&gt;</code>、<code>&lt;script&gt;</code>、<code>&lt;link&gt;</code> 等) 對這些資源的載入行為，因為他們的預期用途是「顯示或執行」，但不會將資源暴露給當前頁面的 JavaScript。</p>
+<p>但是，如果你在 canvas 上畫了任何沒有經過 CORS 允許的跨來源圖片，這個 canvas 就會被標記成「已污染」(tainted)，當 canvas 被污染，所有嘗試用 JavaScript 讀取其像素的方法都會被安全錯誤 (SecurityError) 阻止，這包含了：</p>
+<ul>
+<li><code>canvas.toDataURL()</code></li>
+<li><code>canvas.toBlob()</code></li>
+<li><code>ctx.getImageData()</code></li>
+</ul>
+<p>意思是：</p>
+<figure class="highlight javascript hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ctx.<span class="title function_">drawImage</span>(img, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>); <span class="hljs-comment">// 還是可以把圖畫上去</span></span><br><span class="line"><span class="hljs-keyword">const</span> imageData = ctx.<span class="title function_">getImageData</span>(<span class="hljs-number">10</span>, <span class="hljs-number">20</span>, <span class="hljs-number">80</span>, <span class="hljs-number">230</span>); <span class="hljs-comment">// 但是會被阻止讀取像素</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>那為了讓載入的圖片受到 CORS 允許，一種常見的方式是將 <code>crossorigin</code> 設為 <code>anonymous</code> (可以參考<a target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/HTML/How_to/CORS_enabled_image">MDN</a>)。</p>
+<p>Anonymous 的中文是「匿名的」，在這個模式下，瀏覽器會發起 CORS 請求，並主動省略任何可以辨識使用者的身份資訊，像是 Cookie、auth header、TLS 客戶端憑證。這讓這個請求在伺服器端看起來就像是來自任何陌生的訪客，完全無法分辨具體是哪個使用者。因此，如果伺服器在這種情況下依然回傳資源，表示這筆資源對伺服器而言屬於公開資源，不會因不同請求者而有所差異，也不涉及使用者的隱私或權限檢查。</p>
+<p>所以，伺服器可以很放心的在 Response Headers 中加入 <code>Access-Control-Allow-Origin: *</code>，代表它願意讓來自任何網頁（任意 origin）的 JavaScript 存取這筆資料，因為這筆資料對所有人來說都一樣，不會因為被誰取得而造成安全風險。於是瀏覽器看到這個 Header 後，就會很放心的將這筆 Response 完整的交給 JavaScript 存取。</p>
+<h2 id="把故事拉回正題"><a href="#把故事拉回正題" class="headerlink" title="把故事拉回正題"></a>把故事拉回正題</h2><p>我預期我在載入圖片時，將 <code>img.crossOrigin</code> 設為 <code>anonymous</code>，這樣在 Response Headers 中會有 <code>Access-Control-Allow-Origin: *</code>，這樣我就可以在 canvas 上畫圖片了。</p>
+<p>然而，載入圖片的 Response Headers 居然是空的，console 中出現了熟悉的朋友 CORS 錯誤，奇怪的是，這個錯誤有時候出現，有時候又不出現，讓 debug 過程中充滿了不確定性。</p>
+<figure class="highlight plaintext hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Access to image at “&lt;url-path&gt;” from origin ‘http://localhost:3000' has been blocked by CORS policy: No ‘Access-Control-Allow-Origin’ header is present on the requested resource.</span><br></pre></td></tr></tbody></table></figure>
+
+<p>由於要載入的圖片位於 S3 上，我猜測是 S3 CORS policy 設定有問題，但檢查了一下後沒發現什麼問題，AllowedMethods 包含了 GET 讓我可以取得圖片內容，AllowedOrigins 包含了 <code>*</code> 讓我可以從任何網頁取得圖片。</p>
+<figure class="highlight json hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-punctuation">[</span></span><br><span class="line">  <span class="hljs-punctuation">{</span></span><br><span class="line">    <span class="hljs-attr">"AllowedHeaders"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">"*"</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span></span><br><span class="line">    <span class="hljs-attr">"AllowedMethods"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">"GET"</span><span class="hljs-punctuation">,</span> <span class="hljs-string">"PUT"</span><span class="hljs-punctuation">,</span> <span class="hljs-string">"HEAD"</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span></span><br><span class="line">    <span class="hljs-attr">"AllowedOrigins"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">"*"</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span></span><br><span class="line">    <span class="hljs-attr">"ExposeHeaders"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">]</span></span><br><span class="line">  <span class="hljs-punctuation">}</span></span><br><span class="line"><span class="hljs-punctuation">]</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>難道是 S3 設定正確，但卻沒有把 Response Headers 傳給我？我在 Terminal 中使用 curl 來測試：</p>
+<figure class="highlight bash hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl -I -H <span class="hljs-string">"Origin: http://localhost:3000"</span> &lt;url-path&gt;</span><br><span class="line"><span class="hljs-comment"># -I: print the response headers</span></span><br><span class="line"><span class="hljs-comment"># -H: add an additional header in the request</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>Response 中確實包含著我想要的 <code>Access-Control-Allow-Origin: *</code>：</p>
+<figure class="highlight bash hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 200 OK</span><br><span class="line">...</span><br><span class="line">Access-Control-Allow-Origin: *</span><br><span class="line">Access-Control-Allow-Methods: GET, PUT, HEAD</span><br><span class="line">Vary: Origin, Access-Control-Request-Headers, Access-Control-Request-Method</span><br><span class="line">....</span><br></pre></td></tr></tbody></table></figure>
+
+<p>這表示瀏覽器應該有收到 Response Headers，但不知道為什麼沒有使用它。</p>
+<h2 id="都是快取惹的禍？"><a href="#都是快取惹的禍？" class="headerlink" title="都是快取惹的禍？"></a>都是快取惹的禍？</h2><p>我再次在開發者工具的 Network Tab 中找到那個產生錯誤的請求，發現在 Request Headers 下面寫了一行警告：</p>
+<p>Provisional headers are shown. <a target="_blank" rel="noopener" href="https://developer.chrome.com/docs/devtools/network/reference#provisional-headers">Learn more</a></p>
+<p>點進去看發現了以下說明：</p>
+<blockquote><p>Sometimes the Headers tab shows the Provisional headers are shown… warning message. This may be due to the following reasons:</p>
+<ul>
+<li>The request wasn’t sent over the network but was served from a local cache, which doesn’t store the original request headers. In this case, you can disable caching to see the full request headers.</li>
+</ul>
+</blockquote>
+
+<p>這段述敘指出，Request 實際上並沒有發送出去，而是使用了快取。意思是之前可能在哪裡用一樣的網址載入過一樣的圖片，被瀏覽器快取起來了，但這個快取並不包含 Request Headers。之後載入圖片時，瀏覽器直接從快取中取得了圖片，但快取中並沒有包含 Request Headers，所以就產生了 CORS 錯誤。</p>
+<p>仔細的看了一下我在做的網頁後發現了端倪。網頁的左邊是用 style 的方式載入圖片，右邊是用 <code>&lt;canvas&gt;</code> 畫圖。在網頁第一次渲染時，左邊的圖片會先載入後，右邊才會載入圖片接著畫在 <code>&lt;canvas&gt;</code> 上面。</p>
+<figure class="highlight jsx hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;div style={{ <span class="hljs-attr">background</span>: <span class="hljs-string">`url(&lt;url-path&gt;)`</span> }}&gt;&lt;/div&gt;</span><br></pre></td></tr></tbody></table></figure>
+
+<p>用 style 載入圖片的寫法和 <code>&lt;img&gt;</code> 一樣，都會是一種匿名請求，但不會發起 CORS 請求，所以不會把 <code>Origin</code> Header 傳給伺服器，因此伺服器也不會在 Response Headers 中加入 <code>Access-Control-Allow-Origin: *</code>。但這個請求被快取住了，所以當右邊的 <code>&lt;canvas&gt;</code> 要使用圖片前用 <code>new Image()</code> 載入圖片時，瀏覽器就直接使用這個快取的圖片，就產生了 CORS 錯誤。</p>
+<p>當我把 Network Tab 上的 “Disable cache” 打開後，就沒有出現 CORS 錯誤了，再次證明了我的猜測是對的。</p>
+<p>即使知道了這件事，我還是很納悶，為什麼瀏覽器會使用這個快取？</p>
+<p>如果我發出的是 CORS 請求，即使快取中有相同的資源，但沒有 CORS 的 Response Headers，那就不應該拿，應該要重新發出 Request 吧，不然不就一定會產生 CORS 錯誤？</p>
+<p>搜索了一番，才發現從 12 年前到 2021 年間都有人在討論這個問題：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/12648809/cors-policy-on-cached-image">CORS policy on cached Image</a></li>
+<li><a target="_blank" rel="noopener" href="https://issues.chromium.org/issues/40381978">Cross-origin request from cache failing after regular request is cached.</a>。</li>
+</ul>
+<p>我在第二個連結底下 @chromium.org 的回覆中找到了答案：</p>
+<blockquote><p>This is simply how HTTP caching works. Most resources do not look at most headers, so HTTP, by default, does not incorporate headers into the cache key. If it did, every browser update would clear the HTTP cache (User-Agent header changes), and you wouldn’t get caching across different kinds of fetches (Accept header changes).</p>
+</blockquote>
+
+<p>Chrome 開發者指出，HTTP 快取的機制不會把 Request Headers 加入快取的 key 中，所以瀏覽器不會管這個資源是否有 CORS 的 Response Headers。如果把 Headers 都加進快取的 key 中，每次瀏覽器更新時，User-Agent Header 可能會改變，進而清除所有快取。或是每當 Accept Header 有變化，即使是相同的 URL，都會被視為不同資源，就沒辦法有效的利用快取。</p>
+<p>簡而言之，開發者認為瀏覽器在發出 CORS Request 時使用了非 CORS 的快取，並不是一個 bug，這麼做是為了增加快取的效率。</p>
+<p>接著，他接著提出解決辦法：讓伺服器端的回應中加入 <code>Vary: Origin</code> Header。</p>
+<blockquote><p>Thus, if the server sends us responses without Vary: Origin, it has told us that the response is not sensitive to the Origin field. The HTTP cache is thus free to reuse the request when it adds the Origin header. The fix is straightforward: if the server looks at the Origin header (or lack thereof), it must send Vary: Origin.</p>
+</blockquote>
+
+<p>Vary Header 的作用在 <a target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Vary">MDN</a> 中有提到：</p>
+<blockquote><p>Including a Vary header ensures that responses are separately cached based on the headers listed in the Vary field. Most often, this is used to create a cache key when content negotiation is in use.</p>
+</blockquote>
+
+<p>段落中的內容協商 (Content Negotiation) 是 HTTP 的一種機制，目的是讓客戶端 (瀏覽器) 和伺服器就同一個資源 (同一個 URI) 的最佳表現形式達成一致。</p>
+<p>比如瀏覽器可以透過 <code>Accept-Language</code> Header 請求英文版的網頁，假設這個資源已經被快取，之後要再取得中文版的網頁，如果快取的 key 沒有包含 <code>Accept-Language</code> Header，就可能錯誤地把英文版的網頁提供給客戶端。</p>
+<p>這時候 Vary Header 就派上用場了，伺服器可以用 <code>Vary</code> 告訴瀏覽器，這個資源的快取是基於哪些 Header 來區分的。以上面的例子來說，伺服器就可以加上 <code>Vary: Accept-Language</code>，這相當於告訴瀏覽器和快取這個 Response 是根據 <code>Accept-Language</code> Header 而變化的，當你為相同的 URL 再次收到請求，除了要看 URL 還要檢查新請求的 <code>Accept-Language</code> Header 是否和快取時一致。也就是把 <code>Accept-Language</code> Header 納入 cache key 之中。</p>
+<p>因此，要讓快取區分非 CORS 的資源和 CORS 的資源，就讓伺服器再回傳時加上 <code>Vary: Origin</code> Header。這樣就能強制瀏覽器和快取為帶有 Origin Header 的 CORS 請求和不帶 <code>Origin</code> Header 的非 CORS 請求分別維護獨立的快取副本，以避免瀏覽器錯誤地使用一個不包含 <code>Access-Control-Allow-Origin</code> Header 的快取來滿足一個需要 CORS 驗證的請求。</p>
+<p>這樣就解決了我的問題…了嗎？答案是沒有。</p>
+<p>而這要從我們網站圖片所存放的 Amazon S3 談起。</p>
+<h2 id="都是-Amazon-S3-惹的禍？"><a href="#都是-Amazon-S3-惹的禍？" class="headerlink" title="都是 Amazon S3 惹的禍？"></a>都是 Amazon S3 惹的禍？</h2><p>前面提到只要伺服器在 Response 中加入 <code>Vary: Origin</code> Header 就能解決問題，但這邊有一個關鍵的細節，就是這麼做的前提是對於同一個資源，無論是不是 CORS 請求都要回傳 <code>Vary: Origin</code> Header 才不會出錯。</p>
+<p>想想看，假設伺服器只在 CORS 請求時回傳 <code>Vary: Origin</code> Header，回到我在工作中遇到的狀況會發生什麼事：</p>
+<ol>
+<li>一開始是 CSS 載入圖片，瀏覽器的請求不帶有 <code>Origin</code> Header，伺服器確認這是一般的圖片請求，所以在回傳中不特別包含 <code>Vary: Origin</code>，因此對於瀏覽器快取來說，這個圖片的 Response 和 <code>Origin</code> Header 無關。</li>
+<li>接著，當 JavaScript 使用 <code>img.crossOrigin = "anonymous"</code> 發送 CORS 請求時，瀏覽器先查看了快取，由於之前伺服器沒有給出 <code>Vary: Origin</code> 的指示，瀏覽器就認為這張圖和 Origin 沒有關係，於是，就把之前那個沒有 <code>Access-Control-Allow-Origin</code> Header 的快取交給了 JavaScript，接著就出現 CORS 錯誤。</li>
+</ol>
+<p>S3 的設計就是這樣，他只在 CORS 請求時回傳 <code>Vary: Origin</code> Header，在一般的請求時不回傳。這也導致 Chrome 的 bug 清單中有一堆的 WontFix bug，像是：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://issues.chromium.org/issues/40292586">XHR CORS requests for images fail when image previously loaded via img tag</a></li>
+<li><a target="_blank" rel="noopener" href="https://issues.chromium.org/issues/40381978">Cross-origin request from cache failing after regular request is cached.</a></li>
+<li><a target="_blank" rel="noopener" href="https://issues.chromium.org/issues/40529787">Amazon S3 CORS implementation primes cache to reject cross-origin requests</a></li>
+</ul>
+<p>所以，「無法區分」的根源並不是瀏覽器本身的判斷能力不足，而是 S3 (作為伺服器) 沒有在它應該告知的情況下，提供 <code>Vary: Origin</code> 這個關鍵的快取指示。</p>
+<p>為什麼說 S3 「應該告知」呢？</p>
+<p>我們來看一下 <a target="_blank" rel="noopener" href="https://datatracker.ietf.org/doc/html/rfc7231#section-7.1.4">RFC 7231 第 7.1.4. 章節</a>的內容，這個章節定義了 <code>Vary</code> Header 的使用方式和情境，內容包含了伺服器何時應該發送 <code>Vary</code> Header：</p>
+<blockquote><p>An origin server SHOULD send a Vary header field when its algorithm<br>for selecting a representation varies based on aspects of the request<br>message other than the method and request target, …</p>
+</blockquote>
+
+<p>意思是當伺服器選擇要返回什麽內容的表現形式時，如果它的決策是基於請求中的某些特定「線索」 (通常是 HTTP Header，但不是請求方法或 URL 本身)，那麼伺服器就應該在 Response 中包含 <code>Vary</code> Header。</p>
+<p>套用到我所遇到的情境就是，如果伺服器在沒有 <code>Origin</code> Header 時給出不帶 CORS Header 的 Response，在有 <code>Origin</code> Header 時給出帶有 CORS Header 的 Response，那麼它就是根據 <strong>Origin Header 存在與否來「選擇表現形式」的</strong>。因此按照規範的建議，伺服器就應該在 Response 中包含 <code>Vary: Origin</code> Header。</p>
+<p>不過，就如同<a target="_blank" rel="noopener" href="https://serverfault.com/a/856948">這篇回覆</a>所講的一樣，RFC 對於這項規定只有使用 “SHOULD” (強烈建議) 而不是使用 “MUST” (必須)，所以 S3 沒有回傳 <code>Vary: Origin</code> Header 指示沒有按照建議，並不是違反規範。</p>
+<p>結論就是，Chrome 和 S3 都沒有違反規範，但這個規範的確有漏洞，導致了這個問題的發生。</p>
+<h2 id="有什麼解決方法？"><a href="#有什麼解決方法？" class="headerlink" title="有什麼解決方法？"></a>有什麼解決方法？</h2><p><a target="_blank" rel="noopener" href="https://serverfault.com/a/856948">這篇回覆</a>的作者提供了三個解法：</p>
+<h4 id="推薦的方法：Lambda-Edge-解決方案"><a href="#推薦的方法：Lambda-Edge-解決方案" class="headerlink" title="推薦的方法：Lambda@Edge 解決方案"></a>推薦的方法：Lambda@Edge 解決方案</h4><p>這邊必須先補充兩個先備知識：<a target="_blank" rel="noopener" href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> 和 <a target="_blank" rel="noopener" href="https://aws.amazon.com/lambda/edge/">Lambda@Edge</a>。</p>
+<p>Amazon CloudFront 是一種很常見，與 S3 搭配使用的 CDN 服務，可以將 S3 的資源快取到全球各地的節點上，當瀏覽器請求一個資源時，會先經過 CloudFront 的節點，如果節點上沒有快取，就會從 S3 取得資源，並且將資源快取到節點上。</p>
+<p>根據 <a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-at-the-edge.html">AWS 官網</a> 的說明，Lambda@Edge 將 AWS Lambda (無伺服器功能服務) 的功能延伸到了 Amazon CloudFront 的邊緣節點上，讓我們可以在節點上執行程式碼。</p>
+<p align="center">
+  <img src="/2025/07/15/fix-cors-error/cloudfront-lambda@edge-events.png" alt="Lambda@Edge 事件" width="400">
+</p>
+
+<p><a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-cloudfront-trigger-events.html">網站</a>中提到 Lambda@Edge 可以監聽以下事件：</p>
+<ul>
+<li>Viewer Request: CloudFront 收到請求，在檢查 cache 之前。</li>
+<li>Origin Request: CloudFront 將請求轉發給 S3 時。</li>
+<li>Origin Response: CloudFront 收到 S3 的回傳，在存入 cache 之前。</li>
+<li>Viewer Response: CloudFront 回傳資源給瀏覽器之前。</li>
+</ul>
+<p>作者說，我們可以在 CloudFront 的 Origin Response 事件觸發時執行一段 Lambda@Edge 程式，這段程式會檢查 Response 中是否有 <code>Vary</code> Header，沒有的話就主動加上：</p>
+<figure class="highlight http hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-attribute">Vary</span><span class="hljs-punctuation">: </span>Access-Control-Request-Headers, Access-Control-Request-Method, Origin</span><br></pre></td></tr></tbody></table></figure>
+
+<p>這樣就確保了 <code>Vary: Origin</code> 被包含和 Response 中，讓瀏覽器和快取能按照標準行為運作。</p>
+<h4 id="替代方法一：在-CloudFront-中「偽造」Origin-Request-Header"><a href="#替代方法一：在-CloudFront-中「偽造」Origin-Request-Header" class="headerlink" title="替代方法一：在 CloudFront 中「偽造」Origin Request Header"></a>替代方法一：在 CloudFront 中「偽造」Origin Request Header</h4><p>另一個比較粗暴的解決方法是，在 CloudFront 的 Origin Request 事件觸發時，主動在請求中加入 <code>Origin</code> Header，這樣 S3 就會在回傳時包含 <code>Vary: Origin</code> Header。(可以參考 <a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html#add-origin-custom-headers-configure">Add custom headers to origin requests</a>)</p>
+<p>然而，這個方法會讓所有請求都帶上 Origin Header，可能會對快取效率造成影響。</p>
+<h4 id="替代方法二：使用-dummy-的查詢字串參數"><a href="#替代方法二：使用-dummy-的查詢字串參數" class="headerlink" title="替代方法二：使用 dummy 的查詢字串參數"></a>替代方法二：使用 dummy 的查詢字串參數</h4><p>這是最簡單直接，但也是最粗暴的方法：直接在 URL 中加入一個 dummy 的查詢字串參數，讓瀏覽器認為這是不同的資源，這樣就能避免瀏覽器使用快取。</p>
+<p>舉例來說，可以在 HTML 標籤中使用一個帶有特定查詢字串參數的 URL，例如：</p>
+<figure class="highlight html hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">img</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://example.com/image.png?_ctx=html"</span> /&gt;</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>然後，在 JavaScript CORS 請求中使用另一個帶有不同查詢字串參數的 URL，例如 (只要跟前面不一樣就好)：</p>
+<figure class="highlight js hljs"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">img.<span class="hljs-property">src</span> = <span class="hljs-string">"https://example.com/image.png?_ctx=cors"</span>;</span><br></pre></td></tr></tbody></table></figure>
+
+<p>在瀏覽器看來這兩個是不同的 URL，所以會強制發送新的請求。</p>
+<p>這個做法本質上就是<strong>快取清除 (Cache Busting) 策略</strong>：藉由改變資源的 URL 讓快取系統認為這是一個全新的資源，從而重新發送請求到伺服器獲取最新的內容。</p>
+<h2 id="我後來怎麼解決的？"><a href="#我後來怎麼解決的？" class="headerlink" title="我後來怎麼解決的？"></a>我後來怎麼解決的？</h2><p>當時迫於時間壓力，我選擇了最簡單粗暴的方法：使用 dummy 的查詢字串參數。</p>
+<p>因為我們網站中需要用到 CORS 取得圖片的地方，只有要畫在 <code>&lt;canvas&gt;</code> 前載入圖片時會用到，所以當要做這件事情時就在 URL 的後面加上 <code>?_canvas=1</code>。</p>
+<p>於是，CORS 錯誤終於被解決了。</p>
+<h2 id="總結一下問題"><a href="#總結一下問題" class="headerlink" title="總結一下問題"></a>總結一下問題</h2><p>簡單來說，這個問題的根本原因是：</p>
+<ol>
+<li>瀏覽器的 HTTP 快取機制不會將 Request Headers 納入快取的 key 中。</li>
+<li>S3 只在 CORS 請求時才回傳 <code>Vary: Origin</code> Header。</li>
+<li>由於上述原因，瀏覽器會錯誤地使用快取來滿足 CORS 請求，導致 CORS 錯誤。</li>
+</ol>
+<p>我覺得，如果只想簡單快速解決這個問題的話，還是加個 dummy 的查詢字串參數就好了。</p>
+</body></html>
+    
+    </div>
+    
+    <div class="columns is-variable is-1 is-multiline is-mobile">
+    
+        <span class="column is-narrow"><a class="tag is-light article-tag" href="/tags/%E5%89%8D%E7%AB%AF/">#前端</a></span>
+    
+    </div>
+    
+    
+</article>
+
+
+<div class="sharebox">
+    
+<div class="notification is-danger">
+    You need to set <code>install_url</code> to use ShareThis. Please set it in <code>_config.yml</code>.
+</div>
+
+</div>
+
+
+
+<div class="comments">
+    <h3 class="title is-4">評論</h3>
+    
+<div id="disqus_thread">
+    
+    <div class="notification is-danger">
+        You forgot to set the <code>shortname</code> for Disqus. Please set it in <code>_config.yml</code>.
+    </div>
+    
+    <noscript>Please enable JavaScript to view the <a target="_blank" rel="noopener" href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+</div>
+
+    </div>
+</section>
+    <footer class="footer">
+    <div class="container">
+        <div class="columns content">
+            <div class="column is-narrow has-text-centered">
+                &copy; 2025 Tim&nbsp;
+                Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
+                        target="_blank" rel="noopener" href="http://github.com/ppoffice/hexo-theme-minos">Minos</a>
+            </div>
+            <div class="column is-hidden-mobile"></div>
+
+            
+            <div class="column is-narrow">
+                <div class="columns is-mobile is-multiline is-centered">
+                
+                    
+                <a class="column is-narrow has-text-black" title="GitHub" target="_blank" rel="noopener" href="https://github.com/chaoting-sun">
+                    
+                    GitHub
+                    
+                </a>
+                
+                </div>
+            </div>
+            
+            
+        </div>
+    </div>
+</footer>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.22.2/moment-with-locales.min.js"></script>
+
+<!-- test if the browser is outdated -->
+<div id="outdated">
+  <h6>Your browser is out-of-date!</h6>
+  <p>
+    Update your browser to view this website correctly.
+    <a id="btnUpdateBrowser" target="_blank" rel="noopener" href="http://outdatedbrowser.com/"
+      >Update my browser now
+    </a>
+  </p>
+  <p class="last">
+    <a href="#" id="btnCloseUpdateBrowser" title="Close">&times;</a>
+  </p>
+</div>
+<script src="//cdnjs.cloudflare.com/ajax/libs/outdated-browser/1.1.5/outdatedbrowser.min.js"></script>
+<script>
+  $(document).ready(function () {
+    // plugin function, place inside DOM ready function
+    outdatedBrowser({
+      bgColor: "#f25648",
+      color: "#ffffff",
+      lowerThan: "flex",
+    });
+  });
+</script>
+
+<script>
+  window.FontAwesomeConfig = {
+    searchPseudoElements: true,
+  };
+  moment.locale("zh-CN");
+</script>
+
+  
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+<script>
+    MathJax.Hub.Config({
+        "HTML-CSS": {
+            matchFontHeight: false
+        },
+        SVG: {
+            matchFontHeight: false
+        },
+        CommonHTML: {
+            matchFontHeight: false
+        },
+        tex2jax: {
+            inlineMath: [
+                ['$','$'],
+                ['\\(','\\)']
+            ]
+        }
+    });
+</script>
+    
+<script src="//cdnjs.cloudflare.com/ajax/libs/lightgallery/1.6.8/js/lightgallery-all.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/justifiedGallery/3.6.5/js/jquery.justifiedGallery.min.js"></script>
+<script>
+    (function ($) {
+        $(document).ready(function () {
+            if (typeof($.fn.lightGallery) === 'function') {
+                $('.article.gallery').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof($.fn.justifiedGallery) === 'function') {
+                $('.justified-gallery > p > .gallery-item').unwrap();
+                $('.justified-gallery').justifiedGallery();
+            }
+        });
+    })(jQuery);
+</script>
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script>
+    <style>
+        .hljs {
+            position: relative;
+        }
+
+        .hljs .clipboard-btn {
+            float: right;
+            color: #9a9a9a;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .hljs .clipboard-btn:hover {
+          color: #8a8a8a;
+        }
+
+        .hljs > .clipboard-btn {
+            display: none;
+            position: absolute;
+            right: 4px;
+            top: 4px;
+        }
+
+        .hljs:hover > .clipboard-btn {
+            display: inline;
+        }
+
+        .hljs > figcaption > .clipboard-btn {
+            margin-right: 4px;
+        }
+    </style>
+    <script>
+      $(document).ready(function () {
+        $('figure.hljs').each(function(i, figure) {
+          var codeId = 'code-' + i;
+          var code = figure.querySelector('.code');
+          var copyButton = $('<button>Copy <i class="far fa-clipboard"></i></button>');
+          code.id = codeId;
+          copyButton.addClass('clipboard-btn');
+          copyButton.attr('data-clipboard-target-id', codeId);
+
+          var figcaption = figure.querySelector('figcaption');
+
+          if (figcaption) {
+            figcaption.append(copyButton[0]);
+          } else {
+            figure.prepend(copyButton[0]);
+          }
+        })
+
+        var clipboard = new ClipboardJS('.clipboard-btn', {
+          target: function(trigger) {
+            return document.getElementById(trigger.getAttribute('data-clipboard-target-id'));
+          }
+        });
+        clipboard.on('success', function(e) {
+          e.clearSelection();
+        })
+      })
+    </script>
+  
+   
+<script src="/js/script.js"></script>
+
+
+
+    
+    <div class="searchbox ins-search">
+    <div class="searchbox-mask"></div>
+    <div class="searchbox-container ins-search-container">
+        <div class="searchbox-input-wrapper">
+            <input type="text" class="searchbox-input ins-search-input" placeholder="站內搜尋" />
+            <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
+        </div>
+        <div class="searchbox-result-wrapper ins-section-wrapper">
+            <div class="ins-section-container"></div>
+        </div>
+    </div>
+</div>
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '文章',
+                PAGES: '頁面',
+                CATEGORIES: '分類',
+                TAGS: '標籤',
+                UNTITLED: '(無標題)',
+            },
+            CONTENT_URL: '/content.json',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+
+<script src="/js/insight.js"></script>
+
+    
+</body>
+</html>
