@@ -2,7 +2,7 @@
 <html class="has-navbar-fixed-top">
 <head>
     <meta charset="utf-8" />
-<title>不是 CORS 問題的 CORS 問題：瀏覽器、伺服器和快取的行為如何造成 CORS 錯誤 - Tim&#39;s Blog</title>
+<title>瀏覽器快取導致的 CORS 錯誤：原因與解決方法 - Tim&#39;s Blog</title>
 <meta
   name="viewport"
   content="width=device-width, initial-scale=1, maximum-scale=1"
@@ -20,22 +20,23 @@
   hreflang="en"
 />
  
-<meta name="description" content="分享一些前端、後端和專案實作探索時的過程和收穫。" />
+<meta name="description" content="解析瀏覽器快取如何導致 CORS 錯誤，以及 S3、CloudFront 環境下使用 Vary: Origin 的解決方案。" />
  
 <meta name="keywords" content="frontend, backend, web development, programming" />
-  <meta name="description" content="前言前陣子在工作時，其中一項任務是要從 S3 取得一張圖片畫在 canvas 上，但出現了 CORS 錯誤，使得圖片沒辦法顯示在 canvas 上，歷經了一長串的除錯過程後解決了這個問題，也在 Medium 上發了一篇文。我原本想將那篇文章原封不動的搬過來，殊不知順手滑到了 Huli 大大的 CORS 完全手冊，發現自己對於 CORS 所知甚淺，所以後來經歷一番消化和查找後決定將原本的內容補充的更">
+  <meta name="description" content="解析瀏覽器快取如何導致 CORS 錯誤，以及 S3、CloudFront 環境下使用 Vary: Origin 的解決方案。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="不是 CORS 問題的 CORS 問題：瀏覽器、伺服器和快取的行為如何造成 CORS 錯誤">
+<meta property="og:title" content="瀏覽器快取導致的 CORS 錯誤：原因與解決方法">
 <meta property="og:url" content="https://chaoting-sun.github.io/2025/07/15/fix-cors-error/index.html">
 <meta property="og:site_name" content="Tim&#39;s Blog">
-<meta property="og:description" content="前言前陣子在工作時，其中一項任務是要從 S3 取得一張圖片畫在 canvas 上，但出現了 CORS 錯誤，使得圖片沒辦法顯示在 canvas 上，歷經了一長串的除錯過程後解決了這個問題，也在 Medium 上發了一篇文。我原本想將那篇文章原封不動的搬過來，殊不知順手滑到了 Huli 大大的 CORS 完全手冊，發現自己對於 CORS 所知甚淺，所以後來經歷一番消化和查找後決定將原本的內容補充的更">
+<meta property="og:description" content="解析瀏覽器快取如何導致 CORS 錯誤，以及 S3、CloudFront 環境下使用 Vary: Origin 的解決方案。">
 <meta property="og:locale" content="zh_TW">
 <meta property="og:image" content="https://chaoting-sun.github.io/2025/07/15/fix-cors-error/website-layout-with-cors-error.png">
 <meta property="og:image" content="https://chaoting-sun.github.io/2025/07/15/fix-cors-error/cloudfront-lambda@edge-events.png">
 <meta property="article:published_time" content="2025-07-15T02:30:00.000Z">
-<meta property="article:modified_time" content="2025-07-16T15:19:13.803Z">
+<meta property="article:modified_time" content="2026-02-21T13:52:14.306Z">
 <meta property="article:author" content="Tim">
 <meta property="article:tag" content="前端">
+<meta property="article:tag" content="CORS">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://chaoting-sun.github.io/2025/07/15/fix-cors-error/website-layout-with-cors-error.png">   
 <link rel="icon" href="/favicon.png" />
@@ -73,6 +74,15 @@
 <script defer src="//use.fontawesome.com/releases/v5.0.8/js/all.js"></script>
 
           
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S8E933X5QG"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-S8E933X5QG');
+</script>
+
   
 
 <meta name="generator" content="Hexo 7.3.0"></head>
@@ -132,7 +142,7 @@
     <div class="container">
     <article class="article content gallery" itemscope itemprop="blogPost">
   <h1 class="article-title is-size-3 is-size-4-mobile" itemprop="name">
-     不是 CORS 問題的 CORS 問題：瀏覽器、伺服器和快取的行為如何造成 CORS 錯誤 
+     瀏覽器快取導致的 CORS 錯誤：原因與解決方法 
   </h1>
   <div
     class="article-meta columns is-variable is-1 is-multiline is-mobile is-size-7-mobile"
@@ -330,6 +340,12 @@
       ></span
     >
     
+    <span class="column is-narrow"
+      ><a class="tag is-light article-tag" href="/tags/CORS/"
+        >#CORS</a
+      ></span
+    >
+    
   </div>
    
   <div class="columns is-mobile is-multiline article-nav">
@@ -372,7 +388,7 @@
     <div class="container">
         <div class="columns content">
             <div class="column is-narrow has-text-centered">
-                &copy; 2025 Tim&nbsp;
+                &copy; 2026 Tim&nbsp;
                 Powered by <a href="http://hexo.io/" target="_blank">Hexo</a> & <a
                         target="_blank" rel="noopener" href="http://github.com/ppoffice/hexo-theme-minos">Minos</a>
             </div>
