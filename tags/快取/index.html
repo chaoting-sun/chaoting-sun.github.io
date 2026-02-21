@@ -2,7 +2,7 @@
 <html class="has-navbar-fixed-top">
 <head>
     <meta charset="utf-8" />
-<title>Categories - Tim&#39;s Blog</title>
+<title>標籤: 快取 - Tim&#39;s Blog</title>
 <meta
   name="viewport"
   content="width=device-width, initial-scale=1, maximum-scale=1"
@@ -15,9 +15,9 @@
 
 
 <link
-  href="/categories/index.html"
+  href="/en/tags/%E5%BF%AB%E5%8F%96/index.html"
   rel="alternate"
-  hreflang="zh-TW"
+  hreflang="en"
 />
  
 <meta name="description" content="分享一些前端、後端和專案實作探索時的過程和收穫。" />
@@ -26,16 +26,12 @@
   <meta name="description" content="分享一些前端、後端和專案實作探索時的過程和收穫。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Tim&#39;s Blog">
-<meta property="og:url" content="https://chaoting-sun.github.io/en/categories/index.html">
+<meta property="og:url" content="https://chaoting-sun.github.io/tags/%E5%BF%AB%E5%8F%96/index.html">
 <meta property="og:site_name" content="Tim&#39;s Blog">
 <meta property="og:description" content="分享一些前端、後端和專案實作探索時的過程和收穫。">
-<meta property="og:locale" content="en_US">
+<meta property="og:locale" content="zh_TW">
 <meta property="article:author" content="Tim">
-<meta property="article:tag" content="前端">
-<meta property="article:tag" content="CORS">
-<meta property="article:tag" content="快取">
-<meta property="article:tag" content="Frontend">
-<meta property="article:tag" content="Caching">
+<meta property="article:tag" content="frontend, backend, web development, programming">
 <meta name="twitter:card" content="summary">   
 <link rel="icon" href="/favicon.png" />
 
@@ -105,9 +101,9 @@
     
     <div class="navbar-menu navbar-start">
       
-      <a class="navbar-item" href="/en/archives"> Archives </a>
+      <a class="navbar-item" href="/archives"> 封存 </a>
       
-      <a class="navbar-item" href="/en/categories/Software"> Software </a>
+      <a class="navbar-item" href="/categories/Software"> 軟體 </a>
       
     </div>
     
@@ -116,7 +112,7 @@
       
       <a
         class="navbar-item search"
-        title="Search"
+        title="搜尋"
         href="javascript:;"
       >
         <i class="fas fa-search"></i>
@@ -139,19 +135,63 @@
     <section class="section section-heading">
     <div class="container">
         <div class="content">
-            <h5><i class="far fa-folder"></i>Categories</h5>
+            <h5>#快取</h5>
         </div>
     </div>
 </section>
 <section class="section">
     <div class="container">
-        <div class="columns is-variable is-1 is-multiline is-mobile">
-            
-            <span class="column is-narrow">
-                <a class="tag is-light article-tag" href="/en/categories/Software/">Software&nbsp;(1)</a>
-            </span>
-            
-        </div>
+    
+        <article class="article content gallery" itemscope itemprop="blogPost">
+  <h1 class="article-title is-size-3 is-size-4-mobile" itemprop="name">
+    
+    <a href="/2025/07/15/fix-cors-error/" itemprop="url"
+      >瀏覽器快取導致的 CORS 錯誤：原因與解決方法</a
+    >
+    
+  </h1>
+  <div
+    class="article-meta columns is-variable is-1 is-multiline is-mobile is-size-7-mobile"
+  >
+    <span class="column is-narrow">
+      
+      <time datetime="2025-07-15T02:30:00.000Z" itemprop="datePublished"
+        >7月 15 2025</time
+      >
+      
+    </span>
+    
+    <span class="column is-narrow article-category">
+      <i class="far fa-folder"></i>
+      <a
+        class="article-category-link"
+        href="/categories/Software/"
+        >Software</a
+      >
+    </span>
+     
+    <span class="column is-narrow">
+        35 分钟 讀完 (約 5264 字)
+    </span>
+    
+  </div>
+  <div class="article-entry is-size-6-mobile" itemprop="articleBody">
+     <html><head></head><body><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>前陣子在工作時，其中一項任務是要從 S3 取得一張圖片畫在 canvas 上，但出現了 CORS 錯誤，使得圖片沒辦法顯示在 canvas 上，歷經了一長串的除錯過程後解決了這個問題，也在 Medium 上發了一篇文。我原本想將那篇文章原封不動的搬過來，殊不知順手滑到了 Huli 大大的 <a target="_blank" rel="noopener" href="https://blog.huli.tw/2021/02/19/cors-guide-1/">CORS 完全手冊</a>，發現自己對於 CORS 所知甚淺，所以後來經歷一番消化和查找後決定將原本的內容補充的更加完整。</p>
+<p>首先，如果想看全中文網站最好的 CORS 教學，請參考 Huli 大大的文章，這篇文章會專注在系列文的<a target="_blank" rel="noopener" href="https://blog.huli.tw/2021/02/19/cors-guide-6/">第六篇</a> 所提到的「可能不是 CORS 問題的 CORS 問題」。</p></body></html>
+    <p class="article-more-link">
+      <a href="/2025/07/15/fix-cors-error/#more"
+        >閱讀更多</a
+      >
+    </p>
+    
+  </div>
+   
+</article>
+
+
+
+    
+    
     </div>
 </section>
     <footer class="footer">
@@ -186,7 +226,7 @@
                 <span class="icon">
                     <i class="fas fa-globe"></i>
                 </span>
-                <span>English</span>
+                <span>繁體中文</span>
                 <span class="icon is-small">
             <i class="fas fa-angle-down" aria-hidden="true"></i>
           </span>
@@ -195,11 +235,11 @@
         <div class="dropdown-menu has-text-left" role="menu">
             <div class="dropdown-content">
             
-                <a href="/categories/index.html" class="dropdown-item">
+                <a href="/tags/%E5%BF%AB%E5%8F%96/index.html" class="dropdown-item">
                     繁體中文
                 </a>
             
-                <a href="/en/categories/index.html" class="dropdown-item">
+                <a href="/en/tags/%E5%BF%AB%E5%8F%96/index.html" class="dropdown-item">
                     English
                 </a>
             
@@ -243,7 +283,7 @@
   window.FontAwesomeConfig = {
     searchPseudoElements: true,
   };
-  moment.locale("en-AU");
+  moment.locale("zh-CN");
 </script>
 
   
@@ -357,7 +397,7 @@
     <div class="searchbox-mask"></div>
     <div class="searchbox-container ins-search-container">
         <div class="searchbox-input-wrapper">
-            <input type="text" class="searchbox-input ins-search-input" placeholder="Type something..." />
+            <input type="text" class="searchbox-input ins-search-input" placeholder="站內搜尋" />
             <span class="searchbox-close ins-close ins-selectable"><i class="fa fa-times-circle"></i></span>
         </div>
         <div class="searchbox-result-wrapper ins-section-wrapper">
@@ -369,13 +409,13 @@
     (function (window) {
         var INSIGHT_CONFIG = {
             TRANSLATION: {
-                POSTS: 'Posts',
-                PAGES: 'Pages',
-                CATEGORIES: 'Categories',
-                TAGS: 'Tags',
-                UNTITLED: '(Untitled)',
+                POSTS: '文章',
+                PAGES: '頁面',
+                CATEGORIES: '分類',
+                TAGS: '標籤',
+                UNTITLED: '(無標題)',
             },
-            CONTENT_URL: '/content.en.json',
+            CONTENT_URL: '/content.json',
         };
         window.INSIGHT_CONFIG = INSIGHT_CONFIG;
     })(window);
