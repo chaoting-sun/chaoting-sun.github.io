@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fix CORS Errors Caused by Browser Caching | Tim&#39;s Blog</title>
+<meta name="description" content="Learn why CORS errors sometimes aren&#39;t real CORS problems. Discover how browser caching and S3 can cause false CORS failures, plus practical solutions to fix them.">
+<meta name="keywords" content="frontend, backend, web development, programming">
+<meta name="description" content="Learn why CORS errors sometimes aren&#39;t real CORS problems. Discover how browser caching and S3 can cause false CORS failures, plus practical solutions to fix them.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Fix CORS Errors Caused by Browser Caching | Tim&#39;s Blog">
+<meta property="og:url" content="https://chaoting.tw/2025/07/15/en/fix-cors-error/index.html">
+<meta property="og:site_name" content="Tim&#39;s Blog">
+<meta property="og:description" content="Learn why CORS errors sometimes aren&#39;t real CORS problems. Discover how browser caching and S3 can cause false CORS failures, plus practical solutions to fix them.">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://chaoting.tw/2025/07/15/en/fix-cors-error/website-layout-with-cors-error.png">
+<meta property="og:image" content="https://chaoting.tw/2025/07/15/en/fix-cors-error/cloudfront-lambda@edge-events.png">
+<meta property="article:published_time" content="2025-07-15T02:30:00.000Z">
+<meta property="article:modified_time" content="2026-02-21T15:30:52.000Z">
+<meta property="article:author" content="Tim">
+<meta property="article:tag" content="CORS">
+<meta property="article:tag" content="Caching">
+<meta property="article:tag" content="Frontend">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://chaoting.tw/2025/07/15/en/fix-cors-error/website-layout-with-cors-error.png">
+
+<link rel="alternate" hreflang="zh-TW" href="https://chaoting.tw/2025/07/15/fix-cors-error/">
+
+<link rel="alternate" hreflang="en" href="https://chaoting.tw/2025/07/15/en/fix-cors-error/">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%2314161a'/%3E%3Ctext x='8' y='11.5' font-family='monospace' font-size='9' font-weight='700' text-anchor='middle' fill='%23fff'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+/* Light by default (UI.md); runs before paint so there is no flash. */
+try { if (localStorage.getItem("site:theme") === "dark") document.documentElement.setAttribute("data-theme", "dark"); } catch {}
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S8E933X5QG"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-S8E933X5QG');</script>
+
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+<body>
+
+<header class="top">
+  <div class="top__in">
+    <a class="top__logo" href="/en/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l6-5-6-5M12 19h8"/></svg><span>Tim&#39;s Blog</span></a>
+    <nav class="nav" aria-label="main">
+      
+      <a href="/en/archives"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v4H3z"/><path d="M5 8v12h14V8M10 12h4"/></svg>Archives</a>
+      
+      <a href="/en/categories/Software"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Software</a>
+      
+    </nav>
+    <div class="top__tools">
+      
+      <a class="iconbtn iconbtn--text" href="/2025/07/15/fix-cors-error/" hreflang="zh-TW" lang="zh-tw" title="切換成中文">EN</a>
+      
+      
+      <a class="iconbtn" target="_blank" rel="noopener" href="https://github.com/chaoting-sun" aria-label="GitHub" title="GitHub"><svg class="icon" viewBox="0 0 24 24"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+      
+      <button class="iconbtn" type="button" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+        <svg class="icon icon--moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+        <svg class="icon icon--sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<script>
+document.getElementById("themeToggle").addEventListener("click", () => {
+  const dark = document.documentElement.getAttribute("data-theme") !== "dark";
+  if (dark) document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme");
+  try { localStorage.setItem("site:theme", dark ? "dark" : "light"); } catch {}
+  document.dispatchEvent(new CustomEvent("themechange", { detail: { dark } }));
+});
+</script>
+
+<main class="main">
+<article class="wrap wrap--read">
+  <header class="page-head">
+    <h1 class="t-section">Fix CORS Errors Caused by Browser Caching</h1>
+    <div class="meta">
+  <time class="mono" datetime="2025-07-15T02:30:00.000Z">2025-07-15</time>
+  
+  <a class="meta__cat" href="/en/categories/Software/">Software</a>
+  
+  
+  <span class="tags"><a class="pill" href="/en/tags/CORS/">#CORS</a><a class="pill" href="/en/tags/Frontend/">#Frontend</a><a class="pill" href="/en/tags/Caching/">#Caching</a></span>
+  
+</div>
+
+  </header>
+  <div class="prose"><h2 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h2><p>Some time ago at work, I was tasked with loading an image from S3 to render it onto a canvas. However, a CORS error popped up, causing the image to not display. After a long debugging journey, I finally solved the issue and wrote an article about it on Medium. When I was about to copy that article here, I stumbled upon Huli’s excellent <a target="_blank" rel="noopener" href="https://blog.huli.tw/2021/02/19/en/cors-guide-1/">CORS Complete Guide</a>, and realized my knowledge of CORS was pretty shallow. After digesting more information and doing extra research, I decided to rewrite and supplement my original content to make it more complete.</p>
+<p>If you want the best CORS tutorial, please refer to Huli’s articles. This post will focus on the topic discussed in <a target="_blank" rel="noopener" href="https://blog.huli.tw/2021/02/19/en/cors-guide-6/">Part 6</a> of the series: CORS Issues That May Not Be CORS Issues”.</p>
+<span id="more"></span>
+
+<h2 id="What-Problem-Did-I-Encounter"><a href="#What-Problem-Did-I-Encounter" class="headerlink" title="What Problem Did I Encounter?"></a>What Problem Did I Encounter?</h2><p>As shown below, the goal was to display a user-selected image on a <code>&lt;canvas&gt;</code> in the frontend. When users switch the image on the left, the image in the <code>&lt;canvas&gt;</code> updates accordingly.</p>
+<p align="center">
+  <img src="/2025/07/15/en/fix-cors-error/website-layout-with-cors-error.png"  alt="website layout with cors error" width='400'/>
+</p>
+
+<p>To render the image onto the <code>&lt;canvas&gt;</code>, you <strong>must</strong> set <code>crossorigin</code> to <code>anonymous</code> when loading the image:</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> img = <span class="keyword">new</span> <span class="title class_">Image</span>();</span><br><span class="line">img.<span class="property">crossOrigin</span> = <span class="string">&quot;anonymous&quot;</span>;</span><br><span class="line">img.<span class="property">onload</span> = <span class="function">() =&gt;</span> &#123;</span><br><span class="line">  <span class="comment">// Draw the image onto the canvas</span></span><br><span class="line">  ctx.<span class="title function_">drawImage</span>(img, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">&#125;;</span><br><span class="line">img.<span class="property">onerror</span> = <span class="function">(<span class="params">e</span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">error</span>(<span class="string">&quot;Image loading failed:&quot;</span>, e);</span><br><span class="line">&#125;;</span><br><span class="line">img.<span class="property">src</span> = url;</span><br></pre></td></tr></table></figure>
+
+<p>Let me quickly explain <strong>why</strong> we need to set <code>crossorigin</code> to <code>anonymous</code>. Feel free to skip if you already know.</p>
+<h3 id="A-Quick-Explanation"><a href="#A-Quick-Explanation" class="headerlink" title="A Quick Explanation"></a>A Quick Explanation</h3><p>Browsers enforce the <a target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">Same-Origin Policy</a>: two pages have the same origin if their protocol, domain, and port are all identical; if any one differs, they are of different origins.</p>
+<p>This policy limits cross-origin resource sharing, preventing malicious sites from accessing sensitive data without the user’s consent. For example, without it, a malicious site could use cookies from your logged-in bank session to steal your account data.</p>
+<p>A common misunderstanding: when requesting cross-origin resources, <strong>the browser still sends the request</strong>; only upon receiving the response does the browser block access to it (for JavaScript), due to the Same-Origin Policy.</p>
+<p>To make cross-origin HTTP requests, browsers use <a target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin">CORS (Cross-Origin Resource Sharing)</a>, which is essentially a protocol using HTTP request and response headers.</p>
+<p>When a cross-origin request is made, the browser automatically adds an <code>Origin</code> header, indicating the source website:</p>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">Origin</span><span class="punctuation">: </span>https://your-website.com</span><br></pre></td></tr></table></figure>
+
+<p>If the server approves, it responds with an <code>Access-Control-Allow-Origin</code> header, either with a specific origin or <code>*</code> to allow all origins:</p>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">Access-Control-Allow-Origin</span><span class="punctuation">: </span>https://your-website.com  // Allow only a specific origin</span><br><span class="line"><span class="attribute">Access-Control-Allow-Origin</span><span class="punctuation">: </span>*                         // Allow all origins</span><br></pre></td></tr></table></figure>
+
+<p>The browser will then compare <code>Access-Control-Allow-Origin</code> with the page’s current <code>Origin</code>. If they match, JavaScript can access the resource. Otherwise, the browser blocks it and throws a CORS error.</p>
+<p>There are several types of cross-origin requests: simple requests, preflight requests, credentialed requests, etc., each requiring different headers. Failure to comply results in CORS errors.</p>
+<p>You might wonder: images loaded via the browser are also cross-origin—why don’t they trigger CORS errors?</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">&quot;https://other-website.com/image.png&quot;</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>This is because the Same-Origin Policy mainly restricts <strong>JavaScript’s access to the <em>contents</em> of cross-origin resources</strong>, not the loading of them via HTML tags like <code>&lt;img&gt;</code>, <code>&lt;script&gt;</code>, <code>&lt;link&gt;</code>, etc. These tags are intended to display or execute resources, but do not expose their content to JavaScript.</p>
+<p>However, if you draw any cross-origin image onto a canvas <strong>without proper CORS permission</strong>, the canvas becomes “tainted”. Once tainted, any JavaScript methods that try to read the pixel data will be blocked with a <code>SecurityError</code>, including:</p>
+<ul>
+<li><code>canvas.toDataURL()</code></li>
+<li><code>canvas.toBlob()</code></li>
+<li><code>ctx.getImageData()</code></li>
+</ul>
+<p>For example:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ctx.<span class="title function_">drawImage</span>(img, <span class="number">0</span>, <span class="number">0</span>); <span class="comment">// This works, draws the image</span></span><br><span class="line"><span class="keyword">const</span> imageData = ctx.<span class="title function_">getImageData</span>(<span class="number">10</span>, <span class="number">20</span>, <span class="number">80</span>, <span class="number">230</span>); <span class="comment">// This will throw a SecurityError</span></span><br></pre></td></tr></table></figure>
+
+<p>Therefore, to load an image that can be used on canvas <strong>without tainting</strong>, you usually set <code>crossorigin</code> to <code>anonymous</code>. (<a target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin">MDN reference</a>)</p>
+<p>In this mode, the browser makes a CORS request <strong>without</strong> sending any identifying info like cookies, auth headers, or TLS client certificates. To the server, it looks like an anonymous, unrelated visitor. If the server returns the resource under these conditions, it means it’s public and not sensitive to who’s requesting it.</p>
+<p>So, the server can safely respond with <code>Access-Control-Allow-Origin: *</code>—this tells the browser that <em>any</em> origin’s JavaScript can access the resource. The browser, seeing this, happily lets JS read the resource.</p>
+<h3 id="Back-to-the-Main-Story"><a href="#Back-to-the-Main-Story" class="headerlink" title="Back to the Main Story"></a>Back to the Main Story</h3><p>So, my expectation: by setting <code>img.crossOrigin = &quot;anonymous&quot;</code>, the response from the server would include <code>Access-Control-Allow-Origin: *</code>, letting me draw the image on the canvas.</p>
+<p>However, the response headers were empty, and a familiar CORS error appeared in the console. Even stranger: sometimes the error appeared, sometimes not, making debugging very uncertain.</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Access to image at “&lt;url-path&gt;” from origin ‘http://localhost:3000&#x27; has been blocked by CORS policy: No ‘Access-Control-Allow-Origin’ header is present on the requested resource.</span><br></pre></td></tr></table></figure>
+
+<p>Since the image was stored in S3, I suspected S3’s CORS policy was misconfigured. But upon inspection, everything seemed fine—<code>AllowedMethods</code> included GET, and <code>AllowedOrigins</code> was set to <code>*</code>:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">[</span></span><br><span class="line">  <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;AllowedHeaders&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;*&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;AllowedMethods&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;GET&quot;</span><span class="punctuation">,</span> <span class="string">&quot;PUT&quot;</span><span class="punctuation">,</span> <span class="string">&quot;HEAD&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;AllowedOrigins&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="string">&quot;*&quot;</span><span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;ExposeHeaders&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span><span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">]</span></span><br></pre></td></tr></table></figure>
+
+<p>Maybe S3 is configured correctly but the headers aren’t reaching me? I tested using <code>curl</code>:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl -I -H <span class="string">&quot;Origin: http://localhost:3000&quot;</span> &lt;url-path&gt;</span><br><span class="line"><span class="comment"># -I: print the response headers</span></span><br><span class="line"><span class="comment"># -H: add an additional header in the request</span></span><br></pre></td></tr></table></figure>
+
+<p>And the response <strong>did</strong> include the expected header:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">HTTP/1.1 200 OK</span><br><span class="line">...</span><br><span class="line">Access-Control-Allow-Origin: *</span><br><span class="line">Access-Control-Allow-Methods: GET, PUT, HEAD</span><br><span class="line">Vary: Origin, Access-Control-Request-Headers, Access-Control-Request-Method</span><br><span class="line">....</span><br></pre></td></tr></table></figure>
+
+<p>So, the browser should be receiving the correct response headers—but for some reason, it wasn’t using them.</p>
+<h3 id="Is-Caching-to-Blame"><a href="#Is-Caching-to-Blame" class="headerlink" title="Is Caching to Blame?"></a>Is Caching to Blame?</h3><p>Looking back at the failed request in the Network tab, I noticed a warning under the request headers:</p>
+<blockquote>
+<p>Provisional headers are shown. <a target="_blank" rel="noopener" href="https://developer.chrome.com/docs/devtools/network/reference#provisional-headers">Learn more</a></p>
+</blockquote>
+<p>The linked explanation says:</p>
+<blockquote>
+<p>Sometimes the Headers tab shows the Provisional headers are shown… warning message. This may be due to the following reasons:</p>
+<ul>
+<li>The request wasn’t sent over the network but was served from a local cache, which doesn’t store the original request headers. In this case, you can disable caching to see the full request headers.</li>
+</ul>
+</blockquote>
+<p>This means: the request wasn’t actually sent, but was served from cache. Somewhere, an identical image URL had been loaded before, and cached by the browser—but <strong>the cache does not store the original request headers</strong>. The next time the image is loaded, the browser grabs it from cache—but the cache lacks the CORS headers, so a CORS error occurs.</p>
+<p>A closer look at my page revealed the key: the left image is loaded via a <code>style</code> attribute, while the right side uses <code>&lt;canvas&gt;</code>:</p>
+<figure class="highlight jsx"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;div style=&#123;&#123; <span class="attr">background</span>: <span class="string">`url(&lt;url-path&gt;)`</span> &#125;&#125;&gt;&lt;/div&gt;</span><br></pre></td></tr></table></figure>
+
+<p>Loading the image with CSS (or an <code>&lt;img&gt;</code> tag) is an anonymous request—it doesn’t trigger a CORS request, so <strong>no <code>Origin</code> header</strong> is sent, and the server doesn’t include <code>Access-Control-Allow-Origin: *</code> in its response. That response is cached. Later, when JavaScript loads the image for the canvas using <code>new Image()</code>, the browser reuses the cached image, <strong>but the cache lacks the necessary CORS header</strong>—so a CORS error occurs.</p>
+<p>When I enabled “Disable cache” in the Network tab, the CORS error disappeared—confirming my suspicion.</p>
+<p>But why does the browser do this?</p>
+<p>Even if there’s a cached resource, shouldn’t the browser ignore it if the CORS headers are missing? Otherwise, using cache will <strong>always</strong> cause CORS errors for cross-origin requests!</p>
+<p>After some searching, I discovered people have been discussing this issue since at least 2012:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/12648809/cors-policy-on-cached-image">CORS policy on cached Image</a></li>
+<li><a target="_blank" rel="noopener" href="https://issues.chromium.org/issues/40381978">Cross-origin request from cache failing after regular request is cached.</a></li>
+</ul>
+<p>The answer from @chromium.org in the second thread:</p>
+<blockquote>
+<p>This is simply how HTTP caching works. Most resources do not look at most headers, so HTTP, by default, does not incorporate headers into the cache key. If it did, every browser update would clear the HTTP cache (User-Agent header changes), and you wouldn’t get caching across different kinds of fetches (Accept header changes).</p>
+</blockquote>
+<p>In other words, <strong>HTTP caching by default does not include request headers in the cache key</strong>. If it did, every change in headers like User-Agent or Accept would cause caches to be missed, reducing cache efficiency.</p>
+<p>So, using a cache entry created without CORS headers for a later CORS request <strong>is not a bug</strong>—it’s a design for efficiency.</p>
+<p>The solution: servers should include a <code>Vary: Origin</code> header in responses.</p>
+<blockquote>
+<p>Thus, if the server sends us responses without Vary: Origin, it has told us that the response is not sensitive to the Origin field. The HTTP cache is thus free to reuse the request when it adds the Origin header. The fix is straightforward: if the server looks at the Origin header (or lack thereof), it must send Vary: Origin.</p>
+</blockquote>
+<p>According to <a target="_blank" rel="noopener" href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Vary">MDN on the Vary header</a>:</p>
+<blockquote>
+<p>Including a Vary header ensures that responses are separately cached based on the headers listed in the Vary field. Most often, this is used to create a cache key when content negotiation is in use.</p>
+</blockquote>
+<p>Content negotiation is an HTTP mechanism for choosing the best representation of a resource, like language selection via <code>Accept-Language</code>. If the cache key doesn’t include this header, you might get the wrong version.</p>
+<p>With <code>Vary: Accept-Language</code>, the browser knows to keep separate cache entries for each language. Similarly, <code>Vary: Origin</code> ensures that responses to requests with&#x2F;without the Origin header are cached separately.</p>
+<h3 id="Did-This-Solve-My-Problem"><a href="#Did-This-Solve-My-Problem" class="headerlink" title="Did This Solve My Problem?"></a>Did This Solve My Problem?</h3><p>Not quite. Here’s why: <strong>Amazon S3</strong>.</p>
+<h2 id="Is-Amazon-S3-to-Blame"><a href="#Is-Amazon-S3-to-Blame" class="headerlink" title="Is Amazon S3 to Blame?"></a>Is Amazon S3 to Blame?</h2><p>As mentioned above, if the server always returns <code>Vary: Origin</code> for a resource, everything works. The catch: S3 <strong>only</strong> returns <code>Vary: Origin</code> when a CORS request is made, not for regular requests.</p>
+<p>Consider this workflow:</p>
+<ol>
+<li>The image is first loaded via CSS, with no <code>Origin</code> header. S3 responds <strong>without</strong> <code>Vary: Origin</code>. The browser caches the response, not associating it with <code>Origin</code>.</li>
+<li>Later, JavaScript loads the image with <code>crossOrigin = &quot;anonymous&quot;</code>, triggering a CORS request. The browser checks the cache. Since the previous response lacked <code>Vary: Origin</code>, it assumes the cache is valid regardless of headers, and serves the cached image (which lacks <code>Access-Control-Allow-Origin</code>), causing a CORS error.</li>
+</ol>
+<p>This is how S3 behaves—it only returns <code>Vary: Origin</code> for CORS requests. This behavior has led to multiple WontFix bugs in Chrome:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://issues.chromium.org/issues/40292586">XHR CORS requests for images fail when image previously loaded via img tag</a></li>
+<li><a target="_blank" rel="noopener" href="https://issues.chromium.org/issues/40381978">Cross-origin request from cache failing after regular request is cached.</a></li>
+<li><a target="_blank" rel="noopener" href="https://issues.chromium.org/issues/40529787">Amazon S3 CORS implementation primes cache to reject cross-origin requests</a></li>
+</ul>
+<p>The root issue is not the browser’s lack of intelligence, but that S3 (as the server) <strong>does not always provide the crucial <code>Vary: Origin</code> cache hint</strong>.</p>
+<h4 id="Should-S3-Provide-the-Vary-Header"><a href="#Should-S3-Provide-the-Vary-Header" class="headerlink" title="Should S3 Provide the Vary Header?"></a>Should S3 Provide the Vary Header?</h4><p>Let’s check <a target="_blank" rel="noopener" href="https://datatracker.ietf.org/doc/html/rfc7231#section-7.1.4">RFC 7231, Section 7.1.4</a>:</p>
+<blockquote>
+<p>An origin server SHOULD send a Vary header field when its algorithm for selecting a representation varies based on aspects of the request message other than the method and request target, …</p>
+</blockquote>
+<p>Meaning: if the server’s choice of response varies based on certain request headers (other than the method or URL), it should include a <code>Vary</code> header.</p>
+<p>Applied here: if the presence of an <code>Origin</code> header causes the server to return different responses (CORS or not), then it <strong>should</strong> include <code>Vary: Origin</code> in all responses.</p>
+<p>However, as <a target="_blank" rel="noopener" href="https://serverfault.com/a/856948">this answer</a> points out, RFC only says “SHOULD” (recommended), not “MUST” (required), so S3’s omission is not technically a violation.</p>
+<p>So: Chrome and S3 are both standards-compliant—but the standards themselves have a gap.</p>
+<h2 id="Solutions"><a href="#Solutions" class="headerlink" title="Solutions"></a>Solutions</h2><p><a target="_blank" rel="noopener" href="https://serverfault.com/a/856948">This answer</a> suggests three possible solutions:</p>
+<h3 id="Recommended-Lambda-Edge-Solution"><a href="#Recommended-Lambda-Edge-Solution" class="headerlink" title="Recommended: Lambda@Edge Solution"></a>Recommended: Lambda@Edge Solution</h3><p>First, some background: <a target="_blank" rel="noopener" href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> is a popular CDN used with S3, caching resources worldwide. <a target="_blank" rel="noopener" href="https://aws.amazon.com/lambda/edge/">Lambda@Edge</a> extends AWS Lambda functions to CloudFront edge nodes, letting you execute code in response to CDN events.</p>
+<p align="center">
+  <img src="/2025/07/15/en/fix-cors-error/cloudfront-lambda@edge-events.png"  alt="Lambda@Edge events" width='400'/>
+</p>
+
+<p><a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/lambda-cloudfront-trigger-events.html">CloudFront supports Lambda@Edge triggers</a> on:</p>
+<ul>
+<li>Viewer Request (before checking the cache)</li>
+<li>Origin Request (before contacting the origin server, e.g., S3)</li>
+<li>Origin Response (after receiving response from origin, before caching)</li>
+<li>Viewer Response (before returning to the browser)</li>
+</ul>
+<p>The suggested approach: add a Lambda@Edge function on the <strong>Origin Response</strong> event. If the response lacks a <code>Vary</code> header, add:</p>
+<figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="attribute">Vary</span><span class="punctuation">: </span>Access-Control-Request-Headers, Access-Control-Request-Method, Origin</span><br></pre></td></tr></table></figure>
+
+<p>This guarantees the browser&#x2F;cache will correctly separate CORS and non-CORS responses.</p>
+<h3 id="Alternative-1-Inject-a-Fake-Origin-Header-via-CloudFront"><a href="#Alternative-1-Inject-a-Fake-Origin-Header-via-CloudFront" class="headerlink" title="Alternative 1: Inject a Fake Origin Header via CloudFront"></a>Alternative 1: Inject a Fake Origin Header via CloudFront</h3><p>Another approach is to add an <code>Origin</code> header on all Origin Requests via CloudFront, so that S3 always returns a response with <code>Vary: Origin</code>. (<a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/add-origin-custom-headers.html#add-origin-custom-headers-configure">See AWS Docs</a>)</p>
+<p>However, this makes all requests look like CORS requests, possibly affecting cache efficiency.</p>
+<h3 id="Alternative-2-Use-Dummy-Query-String-Parameters"><a href="#Alternative-2-Use-Dummy-Query-String-Parameters" class="headerlink" title="Alternative 2: Use Dummy Query String Parameters"></a>Alternative 2: Use Dummy Query String Parameters</h3><p>The simplest (but also most brute-force) solution: append a dummy query string parameter to the URL, forcing the browser to treat them as different resources and skip cache.</p>
+<p>For example, use one parameter for the HTML&#x2F;CSS image:</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">&quot;https://example.com/image.png?_ctx=html&quot;</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>And another for the JavaScript CORS request (as long as it’s different):</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">img.<span class="property">src</span> = <span class="string">&quot;https://example.com/image.png?_ctx=cors&quot;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>The browser sees these as different URLs and fetches both anew.</p>
+<p>This is a form of <strong>cache busting</strong>—by changing the resource URL, you ensure the cache doesn’t interfere.</p>
+<h2 id="What-Did-I-End-Up-Doing"><a href="#What-Did-I-End-Up-Doing" class="headerlink" title="What Did I End Up Doing?"></a>What Did I End Up Doing?</h2><p>Under time pressure, I went with the brute-force approach: adding a dummy query parameter.</p>
+<p>Since the only place in our website needing CORS access was when loading images for canvas, I simply appended <code>?_canvas=1</code> to those URLs.</p>
+<p>With that, the CORS error was finally resolved.</p>
+<h2 id="Summary-of-the-Problem"><a href="#Summary-of-the-Problem" class="headerlink" title="Summary of the Problem"></a>Summary of the Problem</h2><p>To summarize, the root causes are:</p>
+<ol>
+<li><strong>Browser HTTP caching does not include request headers in cache keys.</strong></li>
+<li><strong>S3 only returns <code>Vary: Origin</code> for CORS requests.</strong></li>
+<li><strong>As a result, browsers may incorrectly serve cached responses without the required CORS headers, leading to errors.</strong></li>
+</ol>
+<p>If you just need a quick fix, <strong>adding a dummy query string parameter</strong> is the simplest way out.</p>
+<hr>
+<p>Let me know if you want further edits or formatting tweaks!</p>
+</div>
+  
+  
+  
+  <section class="comments">
+    <h2 class="t-subhead">Comments</h2>
+    <div id="utterances" data-repo="chaoting-sun/chaoting-sun.github.io" data-term="title"></div>
+  </section>
+  <script>
+  /* utterances' theme is fixed at load, so (re)load it whenever the site theme changes. */
+  (() => {
+    const box = document.getElementById("utterances");
+    const load = dark => {
+      box.replaceChildren();
+      const s = document.createElement("script");
+      s.src = "https://utteranc.es/client.js"; s.async = true; s.crossOrigin = "anonymous";
+      s.setAttribute("repo", box.dataset.repo);
+      s.setAttribute("issue-term", box.dataset.term);
+      s.setAttribute("theme", dark ? "github-dark" : "github-light");
+      box.append(s);
+    };
+    load(document.documentElement.getAttribute("data-theme") === "dark");
+    document.addEventListener("themechange", e => load(e.detail.dark));
+  })();
+  </script>
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2026 Tim</span>
+  <a target="_blank" rel="noopener" href="https://github.com/chaoting-sun">GitHub</a>
+</footer>
+
+</body>
+</html>
