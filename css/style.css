@@ -123,6 +123,9 @@ button { font: inherit; color: inherit; }
 .prose table:not(.highlight table) { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
 .prose th { text-align: left; padding: 8px 12px; color: var(--ink-muted); font: 600 0.875rem/1.5 var(--font-ui); border-bottom: 1px solid var(--border-subtle); }
 .prose td { padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); }
+.prose pre.mermaid { margin: 1.5em 0; text-align: center; overflow-x: auto; background: none; }
+.prose pre.mermaid svg { max-width: 100%; height: auto; }
+.prose table:not(.highlight table) { display: block; overflow-x: auto; }
 
 /* Code blocks (hexo highlight.js, hljs: false). Monochrome plus one accent (UI.md 強調色極少). */
 .prose figure.highlight { margin: 1.5em 0; padding: 16px 20px; border-radius: var(--r-lg); background: var(--surface); overflow-x: auto; }
