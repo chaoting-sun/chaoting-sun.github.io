@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSM Port Forwarding: Testing a Private-Subnet Service from Your Laptop Without Opening Any Inbound Path | Tim&#39;s Blog</title>
+<meta name="description" content="A service runs in private subnets with no inbound allowed. How do you test it from a laptop? Five options compared, plus how SSM Port Forwarding works, the IAM setup, and the exact commands.">
+<meta name="keywords" content="frontend, backend, web development, programming">
+<meta name="description" content="A service runs in private subnets with no inbound allowed. How do you test it from a laptop? Five options compared, plus how SSM Port Forwarding works, the IAM setup, and the exact commands.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SSM Port Forwarding: Testing a Private-Subnet Service from Your Laptop Without Opening Any Inbound Path | Tim&#39;s Blog">
+<meta property="og:url" content="https://chaoting.tw/2026/10/25/en/ssm-port-forwarding/index.html">
+<meta property="og:site_name" content="Tim&#39;s Blog">
+<meta property="og:description" content="A service runs in private subnets with no inbound allowed. How do you test it from a laptop? Five options compared, plus how SSM Port Forwarding works, the IAM setup, and the exact commands.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-10-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-25T14:35:53.174Z">
+<meta property="article:author" content="Tim">
+<meta property="article:tag" content="AWS">
+<meta property="article:tag" content="ECS">
+<meta property="article:tag" content="Networking">
+<meta property="article:tag" content="SSM">
+<meta name="twitter:card" content="summary">
+
+<link rel="alternate" hreflang="zh-TW" href="https://chaoting.tw/2026/10/25/ssm-port-forwarding/">
+
+<link rel="alternate" hreflang="en" href="https://chaoting.tw/2026/10/25/en/ssm-port-forwarding/">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%2314161a'/%3E%3Ctext x='8' y='11.5' font-family='monospace' font-size='9' font-weight='700' text-anchor='middle' fill='%23fff'%3ET%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+/* Light by default (UI.md); runs before paint so there is no flash. */
+try { if (localStorage.getItem("site:theme") === "dark") document.documentElement.setAttribute("data-theme", "dark"); } catch {}
+</script>
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S8E933X5QG"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-S8E933X5QG');</script>
+
+
+<meta name="generator" content="Hexo 8.1.2"></head>
+<body>
+
+<header class="top">
+  <div class="top__in">
+    <a class="top__logo" href="/en/"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l6-5-6-5M12 19h8"/></svg><span>Tim&#39;s Blog</span></a>
+    <nav class="nav" aria-label="main">
+      
+      <a href="/en/archives"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v4H3z"/><path d="M5 8v12h14V8M10 12h4"/></svg>Archives</a>
+      
+      <a href="/en/categories/Software"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Software</a>
+      
+    </nav>
+    <div class="top__tools">
+      
+      <a class="iconbtn iconbtn--text" href="/2026/10/25/ssm-port-forwarding/" hreflang="zh-TW" lang="zh-tw" title="切換成中文">EN</a>
+      
+      
+      <a class="iconbtn" target="_blank" rel="noopener" href="https://github.com/chaoting-sun" aria-label="GitHub" title="GitHub"><svg class="icon" viewBox="0 0 24 24"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a>
+      
+      <button class="iconbtn" type="button" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+        <svg class="icon icon--moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+        <svg class="icon icon--sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<script>
+document.getElementById("themeToggle").addEventListener("click", () => {
+  const dark = document.documentElement.getAttribute("data-theme") !== "dark";
+  if (dark) document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme");
+  try { localStorage.setItem("site:theme", dark ? "dark" : "light"); } catch {}
+  document.dispatchEvent(new CustomEvent("themechange", { detail: { dark } }));
+});
+</script>
+
+<main class="main">
+<article class="wrap wrap--read">
+  <header class="page-head">
+    <h1 class="t-section">SSM Port Forwarding: Testing a Private-Subnet Service from Your Laptop Without Opening Any Inbound Path</h1>
+    <div class="meta">
+  <time class="mono" datetime="2026-10-24T16:00:00.000Z">2026-10-25</time>
+  
+  <a class="meta__cat" href="/en/categories/Software/">Software</a>
+  
+  
+  <span class="tags"><a class="pill" href="/en/tags/AWS/">#AWS</a><a class="pill" href="/en/tags/ECS/">#ECS</a><a class="pill" href="/en/tags/SSM/">#SSM</a><a class="pill" href="/en/tags/Networking/">#Networking</a></span>
+  
+</div>
+
+  </header>
+  <div class="prose"><blockquote>
+<p><strong>TL;DR</strong></p>
+<ul>
+<li>Situation: a FastAPI service runs on ECS in private subnets, and the environment allows no inbound access at all.</li>
+<li>Approach: SSM Port Forwarding, which connects <code>localhost:8888</code> on the laptop to port <code>8000</code>, where uvicorn listens inside the container.</li>
+<li>How it works: the laptop and the container each dial out to the SSM service, and SSM relays traffic between them. IAM decides who can open the tunnel.</li>
+</ul>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="1-The-service-is-deployed-but-you-can’t-reach-it"><a href="#1-The-service-is-deployed-but-you-can’t-reach-it" class="headerlink" title="1. The service is deployed, but you can’t reach it"></a>1. The service is deployed, but you can’t reach it</h2><p>Our system runs in the AWS environment of a financial-industry client, and that environment allows no public entry point. The backend is a FastAPI service on ECS behind an internal ALB, and every workload sits in a private subnet. There’s no internet-facing load balancer, no bastion host, and no VPN.</p>
+<p>The trouble starts at testing time: the service is deployed, but requests from a laptop never arrive.</p>
+<p>The internal ALB’s DNS name resolves from the public internet, but it resolves to private IPs (all names and IPs in this post are illustrative):</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">dig +short internal-my-alb-1234567890.us-east-1.elb.amazonaws.com</span><br><span class="line"><span class="comment"># → 10.0.1.37, 10.0.3.47</span></span><br></pre></td></tr></table></figure>
+
+<pre class="mermaid">flowchart LR
+    DEV[Developer laptop]
+    ALB[internal ALB&lt;br&gt;10.0.x.x private IP]
+    SVC[ECS service&lt;br&gt;private subnet]
+    DEV -.-&gt;|private IP not routable from internet&lt;br&gt;curl timeout| ALB
+    ALB --&gt; SVC</pre>
+
+<p>Those two <code>10.0.x.x</code> addresses are only routable inside the private network. Once a packet leaves the laptop, there is no route into the VPC, so <code>curl</code> just times out.</p>
+<p>The instinct is to check whether the Security Group allows 443. But a Security Group only evaluates a packet once it reaches the target, and here the packet never even enters the VPC.</p>
+<p>No rule is misconfigured; there is simply no path from outside to inside. To test from a laptop, you first need some channel that reaches the private subnet.</p>
+<h2 id="2-Five-options"><a href="#2-Five-options" class="headerlink" title="2. Five options"></a>2. Five options</h2><p>There are five common approaches. They differ in how they open an entry point, what you have to maintain, and how broad the access they grant is.</p>
+<h3 id="Option-A-Make-the-entry-point-internet-facing"><a href="#Option-A-Make-the-entry-point-internet-facing" class="headerlink" title="Option A: Make the entry point internet-facing"></a>Option A: Make the entry point internet-facing</h3><p>The most direct fix is to switch the test environment’s ALB to internet-facing and restrict source IPs with a Security Group.</p>
+<pre class="mermaid">flowchart LR
+    DEV[Developer laptop] --&gt;|443 inbound| PALB[internet-facing ALB&lt;br&gt;public IP + SG allowlist]
+    PALB --&gt; SVC[Private-subnet service]</pre>
+
+<p>It needs no extra tooling, and the laptop really can reach the service. But a closed environment now has a permanent public entry point, and even with an allowlist, someone has to maintain it and get it through security review. Our environment doesn’t allow any public entry point, so this option is out.</p>
+<h3 id="Option-B-A-bastion-host-with-an-SSH-tunnel"><a href="#Option-B-A-bastion-host-with-an-SSH-tunnel" class="headerlink" title="Option B: A bastion host with an SSH tunnel"></a>Option B: A bastion host with an SSH tunnel</h3><p>If you can’t expose the ALB, the next common approach is to put a jump host in between. The laptop connects to the bastion over SSH and uses <code>ssh -L</code> to bring the remote service’s port back to the local machine.</p>
+<pre class="mermaid">flowchart LR
+    DEV[Developer laptop] --&gt;|SSH 22 inbound| BAS[Bastion EC2&lt;br&gt;public IP]
+    BAS --&gt;|forwards traffic| SVC[Private-subnet service]</pre>
+
+<p>It’s mature and easy to understand, but you now have another machine to patch and monitor, a set of SSH keys to issue, store, and revoke, and a long-lived target on the internet with port 22 open. That’s too heavy for occasionally testing one API from a laptop.</p>
+<h3 id="Option-C-Client-VPN"><a href="#Option-C-Client-VPN" class="headerlink" title="Option C: Client VPN"></a>Option C: Client VPN</h3><p>Client VPN solves the problem more completely. Once connected, the laptop behaves as if it were inside the VPC and can reach any internal resource it’s authorized for.</p>
+<pre class="mermaid">flowchart LR
+    DEV[Developer laptop] --&gt;|VPN tunnel| VPNEP[Client VPN Endpoint]
+    VPNEP --&gt;|laptop treated as inside VPC| SVC[Private-subnet service]</pre>
+
+<p>The cost is setting up an endpoint, certificates, and routes, and access is usually granted to a whole network range. I only wanted to reach one port on one container, so it’s far more than I need.</p>
+<h3 id="Option-D-NAT-Gateway-which-solves-the-opposite-direction"><a href="#Option-D-NAT-Gateway-which-solves-the-opposite-direction" class="headerlink" title="Option D: NAT Gateway, which solves the opposite direction"></a>Option D: NAT Gateway, which solves the opposite direction</h3><p>NAT Gateway comes up a lot in these discussions, but the arrows show that it solves a different problem.</p>
+<pre class="mermaid">flowchart LR
+    SVC[Private-subnet service] --&gt;|inside to outside: OK| NAT[NAT Gateway]
+    NAT --&gt; NET[Internet]
+    NET -.-&gt;|outside to inside: still blocked| SVC</pre>
+
+<p>A NAT Gateway lets services in a private subnet initiate connections outward, for example to pull images, call AWS APIs, or ship logs. It doesn’t let a laptop on the internet connect back in.</p>
+<p>It does point at something useful, though:</p>
+<blockquote>
+<p><strong>Being able to get out doesn’t mean being able to get in. Private networks usually allow outbound traffic while tightly restricting inbound.</strong></p>
+</blockquote>
+<p>Options A, B, and C all open a path from outside to inside, while D only provides one from inside to outside. So flip the idea around: if both the laptop and the container connect outward and a third party joins the two connections, you never have to open inbound.</p>
+<h3 id="Option-E-SSM-Port-Forwarding"><a href="#Option-E-SSM-Port-Forwarding" class="headerlink" title="Option E: SSM Port Forwarding"></a>Option E: SSM Port Forwarding</h3><p>AWS Systems Manager (SSM) is AWS’s service for managing machines. Its Session Manager feature lets you connect from a laptop into a host or a container by relaying through AWS, as long as the target is running the SSM Agent, a small program from AWS that talks to SSM. Port Forwarding is one type of connection Session Manager can open: it links a port on your laptop to a port on the target.</p>
+<p>In our case, <code>localhost:8888</code> on the laptop connects to <code>localhost:8000</code> inside the container, where uvicorn listens. A local program only has to call <code>localhost:8888</code>, and the request travels through the tunnel into the container.</p>
+<p>The tunnel doesn’t give the laptop a direct path into the VPC. Instead, the <code>session-manager-plugin</code> on the laptop and the SSM Agent in the container each dial out to the SSM service, and SSM joins the two.</p>
+<pre class="mermaid">flowchart LR
+    subgraph LT[Developer laptop]
+        PLG[session-manager-plugin&lt;br&gt;listening on localhost:8888]
+    end
+    subgraph AWSX[AWS]
+        SSM[SSM Service&lt;br&gt;relay]
+    end
+    subgraph VPC[ECS task in private subnet]
+        AG[SSM Agent]
+        APP[Service :8000]
+    end
+    PLG --&gt;|① outbound TLS| SSM
+    AG --&gt;|② outbound TLS| SSM
+    AG --&gt;|③ connects to its own 8000| APP</pre>
+
+<p>That’s why it needs no public IP and no new inbound rule, and why the channel disappears as soon as the session ends.</p>
+<h3 id="The-five-options-side-by-side"><a href="#The-five-options-side-by-side" class="headerlink" title="The five options side by side"></a>The five options side by side</h3><table>
+<thead>
+<tr>
+<th>Option</th>
+<th>New inbound entry point</th>
+<th>New assets to maintain</th>
+<th>Access control</th>
+<th>Main cost</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A. internet-facing ALB</td>
+<td>Yes, permanent</td>
+<td>None</td>
+<td>SG allowlist</td>
+<td>Public exposure and security review</td>
+</tr>
+<tr>
+<td>B. Bastion + SSH</td>
+<td>Yes, usually port 22</td>
+<td>Bastion and SSH keys</td>
+<td>Key distribution</td>
+<td>Machine and operations cost</td>
+</tr>
+<tr>
+<td>C. Client VPN</td>
+<td>Yes, VPN endpoint</td>
+<td>VPN configuration</td>
+<td>Certificates, network-range access</td>
+<td>Setup and ongoing fees</td>
+</tr>
+<tr>
+<td>D. NAT Gateway</td>
+<td>No, but wrong direction</td>
+<td>NAT Gateway</td>
+<td>N&#x2F;A</td>
+<td>Hourly, data, and public IPv4 charges</td>
+</tr>
+<tr>
+<td><strong>E. SSM Port Forwarding</strong></td>
+<td><strong>None</strong></td>
+<td><strong>No extra host</strong></td>
+<td><strong>IAM and session records</strong></td>
+<td><strong>Little extra traffic if NAT already exists; VPC endpoints billed separately</strong></td>
+</tr>
+</tbody></table>
+<h2 id="3-Why-SSM-Port-Forwarding"><a href="#3-Why-SSM-Port-Forwarding" class="headerlink" title="3. Why SSM Port Forwarding?"></a>3. Why SSM Port Forwarding?</h2><p>All I needed was temporary access to one port on one container, without opening inbound, and SSM Port Forwarding is exactly that size. If you need long-term access to a whole internal network, choose Client VPN; if you’re serving production traffic, an internet-facing ALB is the proper entry point.</p>
+<p>Under these constraints, it has four advantages:</p>
+<ol>
+<li>It doesn’t change the network’s entry points: everything is outbound, and the VPC gets no public path.</li>
+<li>There’s no host to run: no bastion to maintain for the tunnel, and no SSH keys to manage.</li>
+<li>Access follows identity: IAM decides who can open a tunnel, and every <code>StartSession</code> leaves a CloudTrail event.</li>
+<li>It’s gone when you’re done: once the session closes, the local port no longer leads to the container.</li>
+</ol>
+<p>It has costs too:</p>
+<ul>
+<li>Traffic goes through the SSM relay, so it’s not suited to load testing or moving large amounts of data.</li>
+<li>Sessions don’t persist: they disconnect after sitting idle for a while, and you have to reopen them.</li>
+<li>The tunnel depends on the Agent in the container. While a task is being replaced, or if the Agent is unhealthy, the connection may fail.</li>
+<li>Traffic goes straight into the container without passing through the ALB. It can validate the application, but not the production entry path (see section 7).</li>
+</ul>
+<p>For ad hoc testing and debugging, these limits are acceptable.</p>
+<h2 id="4-How-can-it-connect-without-inbound-access"><a href="#4-How-can-it-connect-without-inbound-access" class="headerlink" title="4. How can it connect without inbound access?"></a>4. How can it connect without inbound access?</h2><p>You can think of SSM Port Forwarding as “two outgoing phone calls and one switchboard.”</p>
+<p>Two people who can’t call each other directly both call the same switchboard. The switchboard never has to call either of them; it just patches the two calls together, and the two can talk.</p>
+<pre class="mermaid">sequenceDiagram
+    participant CLI as Laptop: aws cli + plugin
+    participant SSM as SSM Service
+    participant AG as SSM Agent in container
+    participant APP as Service :8000
+    Note over AG,SSM: When the task starts, the Agent has already dialed out&lt;br&gt;and opened the control channel (TLS 443)
+    CLI-&gt;&gt;SSM: StartSession API (HTTPS, IAM-signed)
+    SSM--&gt;&gt;CLI: session ID + WebSocket URL + one-time token
+    CLI-&gt;&gt;SSM: Dials out to open WebSocket data channel
+    SSM-&gt;&gt;AG: Notifies new session over control channel
+    AG-&gt;&gt;SSM: Dials out to open its own WebSocket data channel
+    Note over CLI,AG: SSM relays application-layer bytes&lt;br&gt;between the two WebSockets
+    CLI-&gt;&gt;SSM: HTTP bytes from curl
+    SSM-&gt;&gt;AG: Relays
+    AG-&gt;&gt;APP: Opens local TCP connection and writes to 8000
+    APP--&gt;&gt;CLI: Response returns the same way</pre>
+
+<p>The whole process has four stages:</p>
+<ol>
+<li><strong>The Agent is already on the line.</strong> When the task starts, the SSM Agent opens a long-lived TLS 443 connection to SSM, called the control channel. It only receives notices such as “a new session is starting” and carries no actual data.</li>
+<li><strong>The operator requests a session.</strong> A session is one connection from the laptop to the container, from the moment it opens until it closes. The operator runs <code>aws ssm start-session</code> to call the <code>StartSession</code> API and names an SSM document. A document is a configuration AWS has already written that tells the Agent what this session should do, such as open a shell or forward a port. Once IAM approves the request, the CLI receives a WebSocket URL and a one-time token. WebSocket is a long-lived, two-way connection built on HTTPS (see appendix A2), and the token is only valid for this session.</li>
+<li><strong>Both ends open data channels.</strong> The plugin and the Agent each dial out to SSM and open a WebSocket, called a data channel, which carries only this session’s data. To a firewall, both sides look like ordinary outbound 443 connections.</li>
+<li><strong>SSM starts relaying.</strong> When the plugin receives local data, it sends it through SSM to the Agent. The Agent then opens a local TCP connection and writes the data to port 8000 in the container.</li>
+</ol>
+<p>The control channel lives as long as the Agent does, while each data channel is created and torn down with its session. That’s why the Agent has to reach <code>RUNNING</code> first, meaning the control channel is up, before an operator can open a session.</p>
+<p>SSM moves application-layer bytes, and each leg of the path has its own TCP connection, so the application’s access log usually shows <code>127.0.0.1</code> as the source rather than the laptop’s IP (see appendix A3).</p>
+<p>And because it only moves bytes, HTTP, SSE, and any other protocol that runs over TCP can use this tunnel.</p>
+<h2 id="5-Prerequisites"><a href="#5-Prerequisites" class="headerlink" title="5. Prerequisites"></a>5. Prerequisites</h2><p>For Port Forwarding to connect, the container needs an SSM Agent, but ECS doesn’t put one there by default, so you rely on a feature called ECS Exec. ECS Exec was built to let a person run commands inside a container from their laptop (<code>aws ecs execute-command</code>). When it’s enabled, ECS places the SSM Agent into the container at task startup, and Port Forwarding borrows that same Agent.</p>
+<p>There are five things to set up: the ECS service, the task role, the container’s outbound path, the operator’s IAM identity, and the local plugin. The task role and the operator’s IAM identity are permission settings. Even though nothing opens inbound, that doesn’t mean anyone can open a tunnel, because the checkpoint has moved from the network to IAM. The task role decides whether the container can accept a session, and the operator’s permissions decide who can open one.</p>
+<h3 id="Enable-ECS-Exec"><a href="#Enable-ECS-Exec" class="headerlink" title="Enable ECS Exec"></a>Enable ECS Exec</h3><p>The ECS service must have <code>enableExecuteCommand</code> turned on. When a task starts, ECS mounts the SSM Agent binary into the container and reports its status under the name <code>ExecuteCommandAgent</code> (ECS calls platform-managed programs like this “managed agents”).</p>
+<p>The setting only applies to newly started tasks, so after you enable <code>enableExecuteCommand</code> you have to redeploy; existing tasks won’t get an Agent.</p>
+<h3 id="Let-the-task-role-open-control-and-data-channels"><a href="#Let-the-task-role-open-control-and-data-channels" class="headerlink" title="Let the task role open control and data channels"></a>Let the task role open control and data channels</h3><p>The task role is the IAM identity a container uses while it runs, and any program inside the container uses it to call AWS APIs. The Agent runs inside the container too, so the permissions go on the task role, not the execution role (the identity ECS uses before the task starts, to pull images and write logs; see appendix A5 for a comparison). The task role needs these four actions:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;Effect&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Allow&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;Action&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">    <span class="string">&quot;ssmmessages:CreateControlChannel&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="string">&quot;ssmmessages:CreateDataChannel&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="string">&quot;ssmmessages:OpenControlChannel&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="string">&quot;ssmmessages:OpenDataChannel&quot;</span></span><br><span class="line">  <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;Resource&quot;</span><span class="punctuation">:</span> <span class="string">&quot;*&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>The four actions map to the two kinds of channel from section 4, and each channel takes two steps, register and connect:</p>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>When</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ssmmessages:CreateControlChannel</code></td>
+<td>Task startup</td>
+<td>Registers the control channel with SSM</td>
+</tr>
+<tr>
+<td><code>ssmmessages:OpenControlChannel</code></td>
+<td>Task startup</td>
+<td>Dials out a WebSocket and waits for notices</td>
+</tr>
+<tr>
+<td><code>ssmmessages:CreateDataChannel</code></td>
+<td>Each new session</td>
+<td>Registers this session’s data channel</td>
+</tr>
+<tr>
+<td><code>ssmmessages:OpenDataChannel</code></td>
+<td>Each new session</td>
+<td>Dials out a WebSocket that carries the data</td>
+</tr>
+</tbody></table>
+<p>Without these permissions, the Agent can’t reach SSM, and <code>ExecuteCommandAgent</code> never reaches <code>RUNNING</code>.</p>
+<h3 id="Let-the-container-reach-SSM"><a href="#Let-the-container-reach-SSM" class="headerlink" title="Let the container reach SSM"></a>Let the container reach SSM</h3><p>The task role grants permission, but the connection also needs a network path: the Agent must be able to reach SSM Messages, the part of SSM that handles control and data channels.</p>
+<p>The container can reach AWS services through a NAT Gateway, or you can create a <code>com.amazonaws.&lt;region&gt;.ssmmessages</code> endpoint in the VPC.</p>
+<p>A VPC endpoint provides a private entry point inside the VPC, so the container can reach SSM Messages without going over the public internet. For ECS Exec, you only need the <code>ssmmessages</code> endpoint (plus <code>kms</code> if you encrypt with your own KMS key). The <code>ssm</code>, <code>ec2messages</code>, and other endpoints that the Systems Manager docs list for EC2 aren’t needed for ECS.</p>
+<h3 id="Allow-the-operator-to-start-sessions"><a href="#Allow-the-operator-to-start-sessions" class="headerlink" title="Allow the operator to start sessions"></a>Allow the operator to start sessions</h3><p>The operator is the person opening the tunnel, and their IAM identity needs <code>ssm:StartSession</code>. AWS’s example policy also lets operators manage their own sessions:</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">[</span></span><br><span class="line">  <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;Effect&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Allow&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;Action&quot;</span><span class="punctuation">:</span> <span class="string">&quot;ssm:StartSession&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;Resource&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="string">&quot;arn:aws:ecs:&lt;region&gt;:&lt;account&gt;:task/&lt;cluster&gt;/*&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="string">&quot;arn:aws:ssm:*:*:document/AWS-StartPortForwardingSessionToRemoteHost&quot;</span></span><br><span class="line">    <span class="punctuation">]</span></span><br><span class="line">  <span class="punctuation">&#125;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;Effect&quot;</span><span class="punctuation">:</span> <span class="string">&quot;Allow&quot;</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;Action&quot;</span><span class="punctuation">:</span> <span class="punctuation">[</span></span><br><span class="line">      <span class="string">&quot;ssm:TerminateSession&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="string">&quot;ssm:ResumeSession&quot;</span><span class="punctuation">,</span></span><br><span class="line">      <span class="string">&quot;ssmmessages:OpenDataChannel&quot;</span></span><br><span class="line">    <span class="punctuation">]</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;Resource&quot;</span><span class="punctuation">:</span> <span class="string">&quot;arn:aws:ssm:*:*:session/$&#123;aws:userid&#125;-*&quot;</span></span><br><span class="line">  <span class="punctuation">&#125;</span></span><br><span class="line"><span class="punctuation">]</span></span><br></pre></td></tr></table></figure>
+
+<p>The <code>StartSession</code> resource lists two things: the ECS task ARN limits which tasks the operator can connect to, and the document ARN limits them to Port Forwarding. Without permission, the API returns <code>AccessDenied</code> immediately, so there’s no WebSocket URL or token, and no data channel can be opened.</p>
+<p>The policy lists a document ARN because the document determines what a session can do. A document is a configuration AWS has already written that tells the Agent whether this session should open a shell or forward a port. If the policy doesn’t restrict the document, an operator who runs <code>aws ssm start-session</code> without naming one gets the default, <code>SSM-SessionManagerRunShell</code>, which opens a shell straight into the container. That shell isn’t recorded, because the logging feature that saves commands and output to CloudWatch Logs or S3 is only wired into <code>aws ecs execute-command</code>, so afterward nobody can tell what the operator did inside the container. For that reason, AWS’s <a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-limit-access-start-session">ECS Exec documentation</a> recommends denying <code>ssm:StartSession</code> on ECS tasks outright, and adds that these sessions also count against the session quota.</p>
+<p>This post restricts the document instead of denying the action entirely. That way, operators can open Port Forwarding but not a shell, and Port Forwarding carries HTTP requests, so there were never any commands to record. CloudTrail, the AWS service that records API calls, still logs the operator, time, source IP, target, and document for every <code>StartSession</code>, <code>ResumeSession</code>, and <code>TerminateSession</code>; appendix A4 lists which fields to look at.</p>
+<h3 id="Install-the-local-plugin"><a href="#Install-the-local-plugin" class="headerlink" title="Install the local plugin"></a>Install the local plugin</h3><p>Finally, install the <a target="_blank" rel="noopener" href="https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html">session-manager-plugin</a> locally. The AWS CLI calls the <code>StartSession</code> API, but it’s this plugin that actually listens on the local port and forwards the data.</p>
+<p>If you’re not sure which of these conditions is missing, AWS’s <a target="_blank" rel="noopener" href="https://github.com/aws-containers/amazon-ecs-exec-checker">amazon-ecs-exec-checker</a> can check your ECS Exec setup.</p>
+<h2 id="6-Opening-the-tunnel"><a href="#6-Opening-the-tunnel" class="headerlink" title="6. Opening the tunnel"></a>6. Opening the tunnel</h2><p>The command that opens the tunnel is <code>aws ssm start-session</code>, and it needs two pieces of information: which container to connect to (the target), and what this session should do (the document).</p>
+<p>Start with the target. SSM identifies an ECS container with a string in a fixed format:</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ecs:&lt;cluster&gt;_&lt;task-id&gt;_&lt;container-runtime-id&gt;</span><br></pre></td></tr></table></figure>
+
+<p>The string has three parts: the cluster the container is in, the ID of its task, and the container’s own runtime ID. It has to go down to the container level because one task can run several containers at once, for example a sidecar (a helper container) that collects logs next to the main application. You already know the cluster name, and you can find the task ID with <code>aws ecs list-tasks</code>; for the runtime ID, you name the container and look it up with <code>aws ecs describe-tasks</code>.</p>
+<p>Next, the document. For ECS targets, the AWS docs explicitly list <code>AWS-StartPortForwardingSessionToRemoteHost</code>, so that’s what we use here. This document takes three parameters: <code>host</code> is the machine the Agent connects to, and <code>localhost</code> means the container itself; <code>portNumber</code> is the port on that machine, and since our image runs uvicorn on <code>8000</code> by default, it’s 8000; <code>localPortNumber</code> is the port the plugin listens on locally, which here is <code>8888</code>.</p>
+<p>The commands below put the two together: they find a running task, confirm the Agent has started, look up the runtime ID to build the target, and finally open the session, mapping the container’s <code>8000</code> to the laptop’s <code>8888</code> (the cluster, service, and container names are illustrative):</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">CLUSTER=my-cluster</span><br><span class="line">SERVICE=my-service</span><br><span class="line">CONTAINER=app</span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. Find a RUNNING task</span></span><br><span class="line">TASK_ARN=$(aws ecs list-tasks --cluster <span class="string">&quot;<span class="variable">$CLUSTER</span>&quot;</span> --service-name <span class="string">&quot;<span class="variable">$SERVICE</span>&quot;</span> \</span><br><span class="line">  --desired-status RUNNING --query <span class="string">&#x27;taskArns[0]&#x27;</span> --output text)</span><br><span class="line">TASK_ID=<span class="variable">$&#123;TASK_ARN##*/&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. Confirm the target container&#x27;s ExecuteCommandAgent is running</span></span><br><span class="line">aws ecs describe-tasks --cluster <span class="string">&quot;<span class="variable">$CLUSTER</span>&quot;</span> --tasks <span class="string">&quot;<span class="variable">$TASK_ARN</span>&quot;</span> \</span><br><span class="line">  --query <span class="string">&quot;tasks[0].containers[?name==&#x27;<span class="variable">$CONTAINER</span>&#x27;].managedAgents[?name==&#x27;ExecuteCommandAgent&#x27;].lastStatus&quot;</span> \</span><br><span class="line">  --output text</span><br><span class="line"><span class="comment"># → RUNNING</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. Get the target container&#x27;s runtime ID</span></span><br><span class="line">RUNTIME_ID=$(aws ecs describe-tasks --cluster <span class="string">&quot;<span class="variable">$CLUSTER</span>&quot;</span> --tasks <span class="string">&quot;<span class="variable">$TASK_ARN</span>&quot;</span> \</span><br><span class="line">  --query <span class="string">&quot;tasks[0].containers[?name==&#x27;<span class="variable">$CONTAINER</span>&#x27;].runtimeId&quot;</span> --output text)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 4. Start the session; this process must keep running</span></span><br><span class="line">aws ssm start-session \</span><br><span class="line">  --target <span class="string">&quot;ecs:<span class="variable">$&#123;CLUSTER&#125;</span>_<span class="variable">$&#123;TASK_ID&#125;</span>_<span class="variable">$&#123;RUNTIME_ID&#125;</span>&quot;</span> \</span><br><span class="line">  --document-name AWS-StartPortForwardingSessionToRemoteHost \</span><br><span class="line">  --parameters <span class="string">&#x27;&#123;&quot;host&quot;:[&quot;localhost&quot;],&quot;portNumber&quot;:[&quot;8000&quot;],&quot;localPortNumber&quot;:[&quot;8888&quot;]&#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>If it works, this terminal stays in the foreground. As long as the process keeps running, another terminal can send requests through the local port:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -i http://localhost:8888/health</span><br></pre></td></tr></table></figure>
+
+<p>The two <code>localhost</code>s here refer to different machines. <code>localhost:8888</code> is on the laptop, where the plugin listens; <code>host=localhost</code> in the document is the container itself, where the application listens on <code>8000</code>.</p>
+<p>Because this path goes straight into the container and skips the ALB’s TLS termination (the ALB is what normally handles HTTPS encryption and decryption), the test URL is usually <code>http://</code>, not <code>https://</code>.</p>
+<h3 id="Common-snags"><a href="#Common-snags" class="headerlink" title="Common snags"></a>Common snags</h3><ul>
+<li><strong>The Agent status is empty.</strong> The most common cause is enabling <code>enableExecuteCommand</code> without redeploying the task, since only new tasks start the managed agent. If it’s still empty after a redeploy, check versions: Fargate needs platform version 1.4.0 or later, and the EC2 launch type needs ECS agent 1.50.2 or later.</li>
+<li><strong>No runtime ID comes back.</strong> If the task has a sidecar, <code>CONTAINER</code> must point to the right container. The container name isn’t necessarily the same as the ECS service name.</li>
+</ul>
+<h3 id="RemoteHost-can-reach-more-than-localhost"><a href="#RemoteHost-can-reach-more-than-localhost" class="headerlink" title="RemoteHost can reach more than localhost"></a>RemoteHost can reach more than localhost</h3><p>The same approach works for hosts outside the container. An RDS database (AWS’s managed database) in a private subnet is just as unreachable from the laptop, but the container can reach it. The <code>host</code> in <code>AWS-StartPortForwardingSessionToRemoteHost</code> doesn’t have to be <code>localhost</code>; set it to the RDS address and the Agent connects to RDS instead, turning the same ECS task into a relay to the database.</p>
+<p>The other document, <code>AWS-StartPortForwardingSession</code>, ends the tunnel at the SSM target itself. In practice it also works directly against ECS targets, but that combination isn’t documented in the official ECS docs:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">aws ssm start-session \</span><br><span class="line">  --target <span class="string">&quot;ecs:<span class="variable">$&#123;CLUSTER&#125;</span>_<span class="variable">$&#123;TASK_ID&#125;</span>_<span class="variable">$&#123;RUNTIME_ID&#125;</span>&quot;</span> \</span><br><span class="line">  --document-name AWS-StartPortForwardingSession \</span><br><span class="line">  --parameters <span class="string">&#x27;&#123;&quot;portNumber&quot;:[&quot;8000&quot;],&quot;localPortNumber&quot;:[&quot;8888&quot;]&#125;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="7-A-working-tunnel-doesn’t-mean-the-production-path-works"><a href="#7-A-working-tunnel-doesn’t-mean-the-production-path-works" class="headerlink" title="7. A working tunnel doesn’t mean the production path works"></a>7. A working tunnel doesn’t mean the production path works</h2><p><strong>A tunnel test only covers the layers the traffic actually passes through.</strong></p>
+<p>SSM Port Forwarding sends traffic straight into the container, so it can validate application logic, API responses, and the container port. Production requests also go through DNS, TLS, the ALB listener, and the target group, and none of those layers are on the tunnel’s path.</p>
+<p>These problems can still show up on the production path even when tunnel tests pass completely:</p>
+<ul>
+<li>An expired certificate or a mismatched domain makes the TLS handshake fail.</li>
+<li>The security policy rejects a particular TLS version or cipher.</li>
+<li>A listener rule is misconfigured, or the application handles <code>X-Forwarded-*</code> headers differently.</li>
+<li>The ALB idle timeout cuts off streaming connections that go quiet for too long.</li>
+<li>A target group health check marks a healthy service as unhealthy, and production requests get 502s.</li>
+<li>Load-balancing behavior and ALB access logs on the production path go unverified.</li>
+</ul>
+<p>For example, SSE can keep streaming through the tunnel but get cut off by the idle timeout when it goes through the ALB.</p>
+<h2 id="8-The-same-shape-elsewhere-reverse-tunnels"><a href="#8-The-same-shape-elsewhere-reverse-tunnels" class="headerlink" title="8. The same shape elsewhere: reverse tunnels"></a>8. The same shape elsewhere: reverse tunnels</h2><p>This approach isn’t unique to AWS. It’s generally called a reverse tunnel, or more broadly the broker pattern.</p>
+<p>What these have in common is that an internal agent connects out to a relay service first. External commands or data then flow back in over that existing connection, so no internal endpoint ever has to accept inbound traffic.</p>
+<p>Other examples with the same shape:</p>
+<ul>
+<li>A GitHub Actions self-hosted runner pulls jobs from GitHub instead of letting GitHub connect into the build environment.</li>
+<li>Cloudflare Tunnel and ngrok run a local agent that connects out to a relay, which then sends public traffic back to the local machine.</li>
+<li>AWS IoT devices behind a home NAT open a long-lived MQTT connection and stay attached to a broker.</li>
+<li>Remote desktop software has two computers, each behind NAT, connect out to a relay.</li>
+<li>Tailscale uses DERP to help establish connections, and keeps relaying through it when a direct connection isn’t possible.</li>
+</ul>
+<p>SSM itself offers several features over the same pipeline. <code>aws ecs execute-command</code> carries terminal input and output (that is, a shell); <code>aws ssm start-session --target i-xxxx</code> opens a session to an EC2 instance; and <code>send-command</code> runs commands on machines that SSM manages.</p>
+<hr>
+<h2 id="Appendix"><a href="#Appendix" class="headerlink" title="Appendix"></a>Appendix</h2><h3 id="A1-How-does-a-timeout-differ-from-connection-refused"><a href="#A1-How-does-a-timeout-differ-from-connection-refused" class="headerlink" title="A1. How does a timeout differ from connection refused?"></a>A1. How does a timeout differ from connection refused?</h3><ul>
+<li>A <code>timeout</code> usually means the packet got no response. The route may not exist, a firewall may have dropped the packet, or the destination may be unreachable.</li>
+<li><code>connection refused</code> means the packet reached the host, but nothing is listening on the target port, so the operating system sent back an RST.</li>
+</ul>
+<p>For example, while the tunnel is open, the only thing listening on the laptop is <code>localhost:8888</code>. If you call the laptop’s <code>localhost:8000</code> instead, and nothing local uses that port, you’ll usually get connection refused.</p>
+<h3 id="A2-What-is-the-WebSocket-“upgrade”"><a href="#A2-What-is-the-WebSocket-“upgrade”" class="headerlink" title="A2. What is the WebSocket “upgrade”?"></a>A2. What is the WebSocket “upgrade”?</h3><p>A WebSocket starts as an ordinary HTTPS request with an <code>Upgrade: websocket</code> header. Once the server replies <code>101 Switching Protocols</code>, the same TCP connection switches from HTTP’s request-response pattern to a persistent two-way channel.</p>
+<p>Because the connection starts out as standard TLS 443 traffic, a firewall still sees it as an ordinary outbound HTTPS connection.</p>
+<h3 id="A3-Bytes-are-relayed-not-connections"><a href="#A3-Bytes-are-relayed-not-connections" class="headerlink" title="A3. Bytes are relayed, not connections"></a>A3. Bytes are relayed, not connections</h3><p>Think of the application data as a letter and the TCP header as its envelope.</p>
+<ul>
+<li>The letter is the HTTP bytes <code>curl</code> sends, and those contents are relayed all the way to the application.</li>
+<li>An envelope is only valid for one leg of the trip. <code>curl ↔ plugin</code>, <code>plugin ↔ SSM</code>, <code>Agent ↔ SSM</code>, and <code>Agent ↔ application</code> are all separate connections.</li>
+<li>At the end of each leg, the old envelope is thrown away, and the letter gets a new one for the next leg.</li>
+</ul>
+<p>So the application sees a new local TCP connection opened by the Agent, and the source is usually <code>127.0.0.1</code>. If the application only listens on IPv6, it may see <code>::1</code> instead.</p>
+<h3 id="A4-Which-CloudTrail-fields-should-you-check"><a href="#A4-Which-CloudTrail-fields-should-you-check" class="headerlink" title="A4. Which CloudTrail fields should you check?"></a>A4. Which CloudTrail fields should you check?</h3><p>In CloudTrail Event history, filter on <code>Event name = StartSession</code>. The most useful fields in each event are:</p>
+<ul>
+<li><code>userIdentity.arn</code>: which IAM identity started the session.</li>
+<li><code>eventTime</code> and <code>sourceIPAddress</code>: when it started and from which IP.</li>
+<li><code>requestParameters.target</code>: the connection target, in the format <code>ecs:&lt;cluster&gt;_&lt;task-id&gt;_&lt;runtime-id&gt;</code>.</li>
+<li><code>requestParameters.documentName</code>: whether it used Port Forwarding, RemoteHost, or another document.</li>
+</ul>
+<p>You can also look up <code>TerminateSession</code> and <code>ResumeSession</code> to see when, and by whom, a session was closed or resumed.</p>
+<h3 id="A5-Task-role-vs-execution-role"><a href="#A5-Task-role-vs-execution-role" class="headerlink" title="A5. Task role vs. execution role"></a>A5. Task role vs. execution role</h3><ul>
+<li><code>taskRoleArn</code> is the identity the container uses while it runs. Both the application and the SSM Agent use this role when they call AWS APIs.</li>
+<li><code>executionRoleArn</code> is the identity the ECS platform uses before the task starts, for example to pull images, create log streams, or read values from Secrets Manager and inject them into the container.</li>
+</ul>
+<p>Think of the execution role as the landlord’s permissions for setting up the room, and the task role as the tenant’s identity after moving in. The SSM Agent runs inside the container, so it uses the task role.</p>
+</div>
+  
+  <script type="module">
+  /* Mermaid bakes the theme into the SVG, so keep the source and re-render on theme change. */
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+  const nodes = [...document.querySelectorAll("pre.mermaid")];
+  nodes.forEach(n => { n.dataset.src = n.textContent; });
+  const render = async dark => {
+    nodes.forEach(n => { n.removeAttribute("data-processed"); n.textContent = n.dataset.src; });
+    mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "neutral" });
+    await mermaid.run({ nodes });
+  };
+  render(document.documentElement.getAttribute("data-theme") === "dark");
+  document.addEventListener("themechange", e => render(e.detail.dark));
+  </script>
+  
+  
+  
+  <nav class="postnav">
+    <a class="postnav__item" href="/2025/07/15/en/fix-cors-error/"><span class="caption muted">Previous post</span><span>Fix CORS Errors Caused by Browser Caching</span></a>
+    
+  </nav>
+  
+  
+  <section class="comments">
+    <h2 class="t-subhead">Comments</h2>
+    <div id="utterances" data-repo="chaoting-sun/chaoting-sun.github.io" data-term="title"></div>
+  </section>
+  <script>
+  /* utterances' theme is fixed at load, so (re)load it whenever the site theme changes. */
+  (() => {
+    const box = document.getElementById("utterances");
+    const load = dark => {
+      box.replaceChildren();
+      const s = document.createElement("script");
+      s.src = "https://utteranc.es/client.js"; s.async = true; s.crossOrigin = "anonymous";
+      s.setAttribute("repo", box.dataset.repo);
+      s.setAttribute("issue-term", box.dataset.term);
+      s.setAttribute("theme", dark ? "github-dark" : "github-light");
+      box.append(s);
+    };
+    load(document.documentElement.getAttribute("data-theme") === "dark");
+    document.addEventListener("themechange", e => load(e.detail.dark));
+  })();
+  </script>
+  
+</article>
+
+</main>
+<footer class="footer">
+  <span>&copy; 2026 Tim</span>
+  <a target="_blank" rel="noopener" href="https://github.com/chaoting-sun">GitHub</a>
+</footer>
+
+</body>
+</html>
